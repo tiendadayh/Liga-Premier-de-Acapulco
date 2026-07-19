@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liga Premier de Acapulco - Panel Avanzado Pro</title>
+    <style>
+        :root { --primary: #e71d36; --secondary: #7209b7; --dark: #011f4b; --light: #fff5f5; --success: #2ec4b6; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--light); margin: 0; padding: 20px; }
+        header { background: var(--dark); color: white; padding: 20px; border-radius: 8px; text-align: center; margin-bottom: 30px; }
+        .admin-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+        .admin-box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 4px solid var(--primary); }
+        h3 { margin-top: 0; color: var(--dark); border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        form { display: flex; flex-direction: column; gap: 12px; }
+        input, select, textarea { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; background: #fff; box-sizing: border-box; width: 100%; }
+        label { font-size: 0.85rem; font-weight: bold; margin-bottom: -5px; color: #555; display: block; }
+        button { background: var(--primary); color: white; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        button:hover { background: #b61225; }
+        .goleador-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 5px; align-items: center; border-bottom: 1px solid #eee; padding: 8px 0; font-size: 0.8rem; }
+        .goleador-row.suspendido-row { background: #fee2e2; opacity: 0.6; }
+        .flex-row { display: flex; gap: 10px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🛠️ PANEL SUPREMO DE ADMINISTRACIÓN LIGA PRO</h1>
+        <p>Liguilla Automatizada, Control de Castigos, Fichajes y Actas de Partido en Vivo</p>
+    </header>
+
+    <!-- ACCIÓN CRÍTICA LIGUILLA Y MODULO DE REGISTROS -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 25px;">
+        <div class="admin-box" style="border-top-color: #ffb703; background: #fffdf5; margin: 0;">
+            <h3>⚡ Cierre de Temporada & Emparejamiento de Playoffs</h3>
+            <p style="font-size:0.85rem; color:#555;">Al hacer clic, el sistema buscará a los 4 primeros de la Fase Regular y abrirá una consola para designar manualmente a los árbitros de las Semifinales.</p>
+            <button onclick="generarLiguillaAutomatica()" style="background:#ffb703; color:#011f4b; width:100%;">🚀 Lanzar Liguilla Oficial Automática</button>
+        </div>
+
+        <div class="admin-box" style="border-top-color: #009688; background: #f2faf9; margin: 0; display:flex; flex-direction:column; justify-content:space-between;">
+            <div>
+                <h3>🔒 Periodo de Transferencias y Registros</h3>
+                <p style="font-size:0.85rem; color:#555;">Congela el ingreso de nuevos jugadores a la plataforma de forma global.</p>
+            </div>
+            <label style="font-size:1.1rem; font-weight: bold; cursor:pointer; margin-bottom:10px;">
+                <input type="checkbox" id="check-cierre-registros" onchange="alternarRegistros(this.checked)"> Cerrar Registro de Jugadores
+            </label>
+        </div>
+    </div>
+
+    <div class="admin-grid">
+        <!-- CREAR COMUNICADO / AVISO -->
+        <div class="admin-box">
+            <h3>Publicar Anuncio / Sanción en Tablón</h3>
+            <form id="form-comunicado">
+                <input type="text" id="com-titulo" placeholder="Título del Aviso / Comunicado" required>
+                <select id="com-tipo">
+                    <option value="aviso">📢 Aviso General / Logística</option>
+                    <option value="sancion">⚠️ Dictamen de Comisión Disciplinaria</option>
+                </select>
+                <textarea id="com-contenido" rows="3" placeholder="Redactar el texto oficial aquí..." required></textarea>
+                <label>Foto de Portada:</label>
+                <input type="file" id="com-foto" accept="image/*">
+                <button type="submit">Publicar en Tablón</button>
+            </form>
+        </div>
+
+        <!-- REGISTRAR EQUIPO -->
+        <div class="admin-box">
+            <h3>Registrar Equipo</h3>
+            <form id="form-add-equipo">
+                <input type="text" id="admin-eq-nombre" placeholder="Nombre del Equipo" required>
+                <label>Escudo o Logo:</label>
+                <input type="file" id="admin-eq-escudo" accept="image/*">
+                <label>Foto Plantel Oficial:</label>
+                <input type="file" id="admin-eq-foto" accept="image/*">
+                <button type="submit">Agregar Equipo</button>
+            </form>
+        </div>
+
+        <!-- REGISTRAR JUGADOR -->
+        <div class="admin-box">
+            <h3>Registrar Jugador</h3>
+            <form id="form-add-jugador">
+                <input type="text" id="admin-jug-nombre" placeholder="Nombre Completo" required>
+                <select id="admin-jug-equipo" required></select>
+                <input type="text" id="admin-jug-posicion" placeholder="Posición"></input>
+                <label>Foto:</label>
+                <input type="file" id="admin-jug-foto" accept="image/*">
+                <button type="submit">Agregar Jugador</button>
+            </form>
+        </div>
+
+        <!-- PROGRAMAR PARTIDO -->
+        <div class="admin-box">
+            <h3>Programar Encuentro</h3>
+            <form id="form-add-partido">
+                <select id="admin-part-jornada" required>
+                    <option value="1">Jornada 1</option><option value="2">Jornada 2</option><option value="3">Jornada 3</option><option value="4">Jornada 4</option>
+                    <option value="99">Liguilla Semis</option><option value="100">Gran Final</option>
+                </select>
+                <select id="admin-part-local" required></select>
+                <select id="admin-part-visita" required></select>
+                <input type="date" id="admin-part-fecha">
+                <input type="time" id="admin-part-hora">
+                <input type="text" id="admin-part-estadio" placeholder="🏟️ Cancha">
+                <select id="admin-part-arbitro" required>
+                    <option value="">-- Selecciona Árbitro Central --</option>
+                </select>
+                <button type="submit">Publicar Partido</button>
+            </form>
+        </div>
+
+        <!-- REGISTRAR ÁRBITRO -->
+        <div class="admin-box">
+            <h3>Registrar Árbitro Oficial</h3>
+            <form id="form-add-arbitro">
+                <input type="text" id="admin-arb-nombre" placeholder="Nombre del Colegiado" required>
+                <input type="text" id="admin-arb-colegio" placeholder="Colegio / Asociación">
+                <label>Foto de Perfil:</label>
+                <input type="file" id="admin-arb-foto" accept="image/*">
+                <button type="submit">Agregar Árbitro</button>
+            </form>
+        </div>
+
+        <!-- CONTROL DE FICHAJES RAPIDOS -->
+        <div class="admin-box" style="border-top-color: var(--secondary);">
+            <h3>🔄 Movimientos de Fichajes de Jugadores</h3>
+            <form id="form-fichaje-rapido">
+                <label>Seleccionar Jugador:</label>
+                <select id="fichaje-jugador" required><option value="">-- Selecciona Jugador --</option></select>
+                <label>Destino de su Carta:</label>
+                <select id="fichaje-destino" required>
+                    <option value="libre">🕊️ Dejar Libre (Agente de Libertad)</option>
+                </select>
+                <button type="submit" style="background:var(--secondary);">Ejecutar Traspaso Oficial</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- CONFIGURAR XI IDEAL -->
+    <div class="admin-box" style="margin-top: 25px; border-top-color: #2ec4b6;">
+        <h3>🏅 Configurar el XI Ideal de la Semana</h3>
+        <div style="display:flex; gap:15px; margin-bottom:15px;">
+            <select id="xi-admin-jornada" style="width:200px;">
+                <option value="1">Jornada 1</option><option value="2">Jornada 2</option><option value="3">Jornada 3</option><option value="4">Jornada 4</option>
+            </select>
+            <button type="button" onclick="cargarJugadoresXI()" style="background:#011f4b; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer;">Cargar Configuración de Jornada</button>
+        </div>
+        <div id="inputs-xi-ideal" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap:12px;">
+            <p style="color:gray; font-size:0.9rem;">Selecciona una jornada y haz clic en Cargar Configuración para armar la cancha.</p>
+        </div>
+        <button type="button" onclick="guardarXI()" style="margin-top:20px; background:#2ec4b6; width:100%;">Guardar Alineación Ideal</button>
+    </div>
+
+    <!-- CÉDULA ARBITRAL AVANZADA CON VIVO Y CRÓNICAS IA -->
+    <div class="admin-box" style="margin-top: 25px; border-top-color: #7209b7;">
+        <h3>🎙️ Consola del Partido: En Vivo, Cédula y Crónica IA</h3>
+        <form id="form-add-resultado">
+            <label>Seleccionar Encuentro:</label>
+            <select id="admin-res-partido" required><option value="">-- Selecciona Partido --</option></select>
+            
+            <!-- CONTROL DE TRANSMISIÓN EN VIVO -->
+            <div style="background: #f0f4f8; padding: 12px; border-radius: 6px; margin: 10px 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <strong>⏱️ Control Operativo Online:</strong>
+                <button type="button" onclick="cambiarEstadoVivo('programado')" style="background:#6c757d; color:white; padding:6px 12px; font-size:0.85rem; border:none; border-radius:4px; cursor:pointer;">📅 Programado</button>
+                <button type="button" onclick="cambiarEstadoVivo('en_curso')" style="background:#e71d36; color:white; padding:6px 12px; font-size:0.85rem; border:none; border-radius:4px; cursor:pointer;">• EN VIVO</button>
+                <button type="button" onclick="cambiarEstadoVivo('finalizado')" style="background:#28a745; color:white; padding:6px 12px; font-size:0.85rem; border:none; border-radius:4px; cursor:pointer;">🏁 Finalizado</button>
+                <span id="txt-estado-actual" style="font-weight:bold; color:#011f4b; margin-left:10px;">Estado: Programado</span>
+            </div>
+
+            <div style="display:flex; gap:20px; max-width: 400px;">
+                <div>
+                    <label>Goles Local</label>
+                    <input type="number" id="admin-res-glocal" value="0" min="0" required>
+                </div>
+                <div>
+                    <label>Goles Visita</label>
+                    <input type="number" id="admin-res-gvisita" value="0" min="0" required>
+                </div>
+            </div>
+
+            <!-- REGISTRO DINÁMICO DE EVENTOS EN VIVO -->
+            <div id="seccion-timeline-dinamica" style="margin-top: 15px; display:none; background:#f9f9f9; padding: 15px; border-radius: 6px; border: 1px solid #ddd;">
+                <label style="font-weight: bold; color: var(--dark); display:block; margin-bottom:8px;">⏰ Inyectar Eventos del Minuto a Minuto (Afecta Marcador al instante)</label>
+                <div style="display:flex; gap: 8px; flex-wrap: wrap;">
+                    <input type="number" id="time-minuto" placeholder="Min" style="width:70px;" min="1" max="120">
+                    <select id="time-tipo" style="width:160px;">
+                        <option value="gol">⚽ Gol Favor</option>
+                        <option value="autogol">❌ Autogol</option>
+                        <option value="amarilla">🟨 Tarjeta Amarilla</option>
+                        <option value="roja">🟥 Tarjeta Roja</option>
+                    </select>
+                    <select id="time-jugador" style="flex:1; min-width:180px;"><option value="">-- Selecciona Jugador --</option></select>
+                    <button type="button" onclick="agregarEventoTimelineInteractivo()" style="padding:10px 15px; background:var(--dark); color:white; border:none; border-radius:4px; cursor:pointer;">+ Registrar Incidencia</button>
+                </div>
+                <div id="lista-eventos-temporales" style="margin-top: 12px; font-size: 0.85rem; color: #333; display:flex; flex-direction:column; gap:4px;"></div>
+            </div>
+
+            <div id="contenedor-incidencias" style="display:none; flex-direction: column; gap: 5px; margin-top: 15px;">
+                <label style="color:var(--secondary); font-weight:bold;">📝 Cédula de Rendimiento Acumulado Final:</label>
+                <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap:5px; font-weight: bold; background: #eee; padding: 5px; text-align: center;">
+                    <div>Jugador</div><div>⚽ Gls</div><div>🟨 Am.</div><div>🟥 Rj.</div>
+                </div>
+                <div id="lista-inputs-jugadores"></div>
+
+                <div style="margin-top:15px;">
+                    <label style="color: #b61225;">⭐ Designar Jugador MVP del Partido (Solo habilitados):</label>
+                    <select id="admin-res-mvp"><option value="">-- Elige primero un partido --</option></select>
+                </div>
+            </div>
+
+            <!-- ASISTENTE AUTOMÁTICO DE CRÓNICA CON IA -->
+            <div id="bloque-cronica-ia" style="margin-top: 15px; background: #fffdf5; border: 1px solid #ffeeba; padding: 15px; border-radius: 6px; display:none;">
+                <h4 style="margin:0 0 10px 0; color:#856404;">🤖 Asistente Editorial: Redactor de Crónicas</h4>
+                <button type="button" onclick="generarCronicaAutomatica()" style="background:#ffc107; color:#212529; padding:8px 12px; margin-bottom:10px; border-radius:4px; border:none; font-weight:bold; cursor:pointer;">⚡ Redactar Resumen del Partido</button>
+                <textarea id="texto-cronica-ia" rows="5" placeholder="La crónica estructurada aparecerá aquí..."></textarea>
+                <label style="margin-top:8px; display:block;"><input type="checkbox" id="chk-publicar-tablon" checked> Publicar automáticamente esta crónica en el Tablón General</label>
+            </div>
+
+            <button type="submit" style="margin-top: 20px; background:#7209b7; width:100%;">Cerrar Cédula e Inyectar Estadísticas Oficiales</button>
+        </form>
+    </div>
+
+    <script>
+        // BASE DE DATOS OPTIMIZADA: Asegura la existencia del array de árbitros
+        let db = JSON.parse(localStorage.getItem('liga_premier_db')) || { 
+            equipos: [], jugadores: [], partidos: [], comunicados: [], 
+            arbitros: [], xiIdealAdmin: {}, registrosCerrados: false, liguillaActiva: false,
+            historialFichajes: []
+        };
+
+        if(!db.historialFichajes) db.historialFichajes = [];
+        if(!db.arbitros) db.arbitros = [];
+
+        function guardarDB() {
+            localStorage.setItem('liga_premier_db', JSON.stringify(db));
+            actualizarFormularios();
+        }
+
+        function convertirImagenABase64(inputElement) {
+            return new Promise((resolve) => {
+                if (!inputElement || !inputElement.files || !inputElement.files[0]) { resolve(""); return; }
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result);
+                reader.readAsDataURL(inputElement.files[0]);
+            });
+        }
+
+        function esJugadorSuspendidoEnJornada(jugador, jornadaActual) {
+            let amarillasAcumuladas = 0;
+            let suspendido = false;
+            let tarjetasPrevias = (db.partidos || [])
+                .filter(p => p.jugado && p.jornada < jornadaActual && p.tarjetasDetalle)
+                .flatMap(p => p.tarjetasDetalle.filter(t => t.jugadorId === jugador.id));
+
+            tarjetasPrevias.forEach(t => {
+                if (t.tipo === 'roja') suspendido = true;
+                if (t.tipo === 'amarilla') amarillasAcumuladas++;
+            });
+            if (amarillasAcumuladas >= 3) suspendido = true;
+            return suspendido;
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById('admin-res-partido').addEventListener('change', (e) => desplegarCargaIncidencias(e.target.value));
+            setupFormularios();
+            verificarEstadoFormularios();
+            actualizarFormularios();
+        });
+
+        function alternarRegistros(valor) {
+            db.registrosCerrados = valor;
+            guardarDB();
+            verificarEstadoFormularios();
+        }
+
+        function verificarEstadoFormularios() {
+            document.getElementById('check-cierre-registros').checked = db.registrosCerrados || false;
+            const btnJugador = document.querySelector('#form-add-jugador button');
+            const inputsJugador = document.querySelectorAll('#form-add-jugador input, #form-add-jugador select');
+            
+            if(db.registrosCerrados) {
+                btnJugador.disabled = true;
+                btnJugador.style.background = "#ccc";
+                btnJugador.innerText = "❌ REGISTROS CERRADOS";
+                inputsJugador.forEach(i => i.disabled = true);
+            } else {
+                btnJugador.disabled = false;
+                btnJugador.style.background = "var(--primary)";
+                btnJugador.innerText = "Agregar Jugador";
+                inputsJugador.forEach(i => i.disabled = false);
+            }
+        }
+
+        function setupFormularios() {
+            document.getElementById('form-comunicado').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const fotoB64 = await convertirImagenABase64(document.getElementById('com-foto'));
+                db.comunicados.unshift({
+                    id: Date.now(),
+                    titulo: document.getElementById('com-titulo').value.trim(),
+                    tipo: document.getElementById('com-tipo').value,
+                    contenido: document.getElementById('com-contenido').value.trim(),
+                    imagen: fotoB64,
+                    fecha: new Date().toLocaleDateString('es-MX')
+                });
+                this.reset(); guardarDB(); alert("Anuncio publicado en el Tablón General.");
+            });
+
+            document.getElementById('form-add-equipo').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const escudoBase64 = await convertirImagenABase64(document.getElementById('admin-eq-escudo'));
+                const fotoBase64 = await convertirImagenABase64(document.getElementById('admin-eq-foto'));
+                db.equipos.push({ id: Date.now(), nombre: document.getElementById('admin-eq-nombre').value.trim(), escudo: escudoBase64, fotoGrupal: fotoBase64 });
+                this.reset(); guardarDB(); alert("Equipo Creado");
+            });
+
+            document.getElementById('form-add-jugador').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                if(db.registrosCerrados) return alert("Los registros están bloqueados administrativamente.");
+                const jugadorBase64 = await convertirImagenABase64(document.getElementById('admin-jug-foto'));
+                db.jugadores.push({ id: Date.now(), nombre: document.getElementById('admin-jug-nombre').value.trim(), equipoId: parseInt(document.getElementById('admin-jug-equipo').value), posicion: document.getElementById('admin-jug-posicion').value.trim() || 'Definir', foto: jugadorBase64, goles: 0, amarillas: 0, rojas: 0, xiIdeal: [] });
+                this.reset(); guardarDB(); alert("Jugador Creado");
+            });
+
+            document.getElementById('form-add-partido').addEventListener('submit', function(e) {
+                e.preventDefault();
+                db.partidos.push({ id: Date.now(), jornada: parseInt(document.getElementById('admin-part-jornada').value), localId: parseInt(document.getElementById('admin-part-local').value), visitaId: parseInt(document.getElementById('admin-part-visita').value), golesLocal: 0, golesVisita: 0, jugado: false, estadoVivo: 'programado', fecha: document.getElementById('admin-part-fecha').value, hora: document.getElementById('admin-part-hora').value, estadio: document.getElementById('admin-part-estadio').value.trim(), arbitro: document.getElementById('admin-part-arbitro').value, eventos: [], tarjetasDetalle: [], mvpJugadorId: null });
+                this.reset(); guardarDB(); alert("Partido Programado");
+            });
+
+            document.getElementById('form-add-arbitro').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const fotoB64 = await convertirImagenABase64(document.getElementById('admin-arb-foto'));
+                db.arbitros.push({ id: Date.now(), nombre: document.getElementById('admin-arb-nombre').value.trim(), colegio: document.getElementById('admin-arb-colegio').value.trim() || 'Independiente', foto: fotoB64 });
+                this.reset(); guardarDB(); alert("Colegiado Arbitral Registrado");
+            });
+
+            document.getElementById('form-fichaje-rapido').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const jId = parseInt(document.getElementById('fichaje-jugador').value);
+                const destino = document.getElementById('fichaje-destino').value;
+                const jugador = db.jugadores.find(j => j.id === jId);
+                if(!jugador) return;
+
+                let nombreOrigen = db.equipos.find(e => e.id === jugador.equipoId)?.nombre || 'Agente Libre';
+                let nombreDestino = '';
+
+                if(destino === 'libre') {
+                    jugador.equipoId = null;
+                    nombreDestino = 'Agente Libre 🕊️';
+                } else {
+                    jugador.equipoId = parseInt(destino);
+                    nombreDestino = db.equipos.find(e => e.id === jugador.equipoId)?.nombre || 'Club';
+                }
+
+                db.historialFichajes.unshift({
+                    id: Date.now(),
+                    jugador: jugador.nombre,
+                    origen: nombreOrigen,
+                    destino: nombreDestino,
+                    fecha: new Date().toLocaleDateString('es-MX')
+                });
+
+                this.reset(); guardarDB(); alert(`Transferencia exitosa: ${jugador.nombre} pasa a ${nombreDestino}`);
+            });
+
+            document.getElementById('form-add-resultado').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const pId = parseInt(document.getElementById('admin-res-partido').value);
+                const partido = db.partidos.find(p => p.id === pId);
+                if(!partido) return;
+
+                partido.golesLocal = parseInt(document.getElementById('admin-res-glocal').value);
+                partido.golesVisita = parseInt(document.getElementById('admin-res-gvisita').value);
+                partido.mvpJugadorId = parseInt(document.getElementById('admin-res-mvp').value) || null;
+                partido.jugado = true;
+                partido.estadoVivo = 'finalizado';
+                partido.tarjetasDetalle = [];
+
+                document.querySelectorAll('.fila-datos-jugador').forEach(row => {
+                    const jId = parseInt(row.dataset.jugadorid);
+                    const jug = db.jugadores.find(j => j.id === jId);
+                    if(jug) {
+                        const g = parseInt(row.querySelector('.in-gol').value) || 0;
+                        const a = parseInt(row.querySelector('.in-amr').value) || 0;
+                        const r = parseInt(row.querySelector('.in-rjs').value) || 0;
+                        
+                        jug.goles += g;
+                        jug.amarillas += a;
+                        jug.rojas += r;
+
+                        for(let i=0; i<a; i++) partido.tarjetasDetalle.push({ jugadorId: jId, tipo: 'amarilla' });
+                        for(let i=0; i<r; i++) partido.tarjetasDetalle.push({ jugadorId: jId, tipo: 'roja' });
+                    }
+                });
+
+                const publicarCronica = document.getElementById('chk-publicar-tablon').checked;
+                const textoCronica = document.getElementById('texto-cronica-ia').value;
+                if(publicarCronica && textoCronica.trim() !== "") {
+                    db.comunicados.unshift({
+                        id: Date.now(),
+                        titulo: textoCronica.split('\n')[0],
+                        tipo: 'aviso',
+                        contenido: textoCronica.split('\n').slice(1).join('\n').trim(),
+                        imagen: "",
+                        fecha: new Date().toLocaleDateString('es-MX')
+                    });
+                }
+
+                this.reset(); 
+                document.getElementById('contenedor-incidencias').style.display = 'none';
+                document.getElementById('seccion-timeline-dinamica').style.display = 'none';
+                document.getElementById('bloque-cronica-ia').style.display = 'none';
+                guardarDB(); alert("Cédula Almacenada, Estadísticas actualizadas y Crónica inyectada con éxito.");
+            });
+        }
+
+        function cambiarEstadoVivo(estado) {
+            const pId = parseInt(document.getElementById('admin-res-partido').value);
+            const partido = db.partidos.find(p => p.id === pId);
+            if(!partido) return alert("Selecciona un partido primero.");
+
+            partido.estadoVivo = estado;
+            if(estado === 'en_curso') {
+                partido.jugado = false;
+                document.getElementById('txt-estado-actual').innerHTML = "🟢 Transmitiendo: EN VIVO";
+                document.getElementById('bloque-cronica-ia').style.display = 'none';
+            } else if(estado === 'finalizado') {
+                partido.jugado = true;
+                document.getElementById('txt-estado-actual').innerHTML = "🏁 Estatus: Finalizado";
+                document.getElementById('bloque-cronica-ia').style.display = 'block';
+            } else {
+                partido.jugado = false;
+                document.getElementById('txt-estado-actual').innerHTML = "📅 Estatus: Programado";
+                document.getElementById('bloque-cronica-ia').style.display = 'none';
+            }
+            localStorage.setItem('liga_premier_db', JSON.stringify(db));
+        }
+
+        function agregarEventoTimelineInteractivo() {
+            const pId = parseInt(document.getElementById('admin-res-partido').value);
+            const partido = db.partidos.find(p => p.id === pId);
+            if(!partido) return;
+
+            const min = document.getElementById('time-minuto').value;
+            const tipo = document.getElementById('time-tipo').value;
+            const jugNombre = document.getElementById('time-jugador').value;
+
+            if(!min || !jugNombre) return alert("Ingresa el minuto y el futbolista del evento.");
+            const jugador = db.jugadores.find(j => j.nombre === jugNombre);
+
+            if(!partido.eventos) partido.eventos = [];
+            partido.eventos.push({ min: parseInt(min), tipo: tipo, desc: jugNombre });
+
+            const esLocal = (jugador.equipoId === partido.localId);
+            if(tipo === 'gol') {
+                if(esLocal) partido.golesLocal = (partido.golesLocal || 0) + 1;
+                else partido.golesVisita = (partido.golesVisita || 0) + 1;
+            } else if (tipo === 'autogol') {
+                if(esLocal) partido.golesVisita = (partido.golesVisita || 0) + 1;
+                else partido.golesLocal = (partido.golesLocal || 0) + 1;
+            }
+
+            document.getElementById('admin-res-glocal').value = partido.golesLocal;
+            document.getElementById('admin-res-gvisita').value = partido.golesVisita;
+
+            document.getElementById('lista-eventos-temporales').innerHTML += `<div style="background:#fff; padding:4px; border:1px solid #eee;">⏰ Minuto ${min}' - [${tipo.toUpperCase()}] de ${jugNombre}</div>`;
+            document.getElementById('time-minuto').value = '';
+            localStorage.setItem('liga_premier_db', JSON.stringify(db));
+        }
+
+        function generarCronicaAutomatica() {
+            const pId = parseInt(document.getElementById('admin-res-partido').value);
+            const partido = db.partidos.find(p => p.id === pId);
+            if(!partido) return;
+
+            const loc = db.equipos.find(e => e.id === partido.localId)?.nombre || 'Local';
+            const vis = db.equipos.find(e => e.id === partido.visitaId)?.nombre || 'Visita';
+            const gl = partido.golesLocal || 0;
+            const gv = partido.golesVisita || 0;
+
+            let titulo = `¡Duelo Épico! Resumen Final: ${loc} ${gl} - ${gv} ${vis}`;
+            let cuerpo = `En acciones de la Jornada ${partido.jornada}, las escuadras de ${loc} y ${vis} se batieron en un compromiso de alto voltaje. `;
+            
+            if(gl > gv) cuerpo += `El cuadro de ${loc} sacó provecho de la localía para consolidar un valioso triunfo. `;
+            else if(gv > gl) cuerpo += `La comitiva de ${vis} asestó un golpe letal en patio ajeno llevándose la victoria total. `;
+            else cuerpo += `Ambos planteles se neutralizaron tácticamente firmando una repartición de unidades. `;
+
+            if(partido.eventos?.length > 0) {
+                const goles = partido.eventos.filter(e => e.tipo === 'gol');
+                if(goles.length > 0) cuerpo += `Las anotaciones corrieron por cuenta de ${goles.map(g=>`${g.desc} (${g.min}')`).join(', ')}. `;
+            }
+
+            const mvpId = parseInt(document.getElementById('admin-res-mvp').value);
+            if(mvpId) cuerpo += `La distinción honorífica al jugador MVP fue otorgada a ${db.jugadores.find(j=>j.id===mvpId)?.nombre} por su despliegue dentro del campo.`;
+
+            document.getElementById('texto-cronica-ia').value = `${titulo}\n\n${cuerpo}`;
+        }
+
+        function cargarJugadoresXI() {
+            const contenedor = document.getElementById('inputs-xi-ideal');
+            const jornada = document.getElementById('xi-admin-jornada').value;
+            contenedor.innerHTML = '';
+            
+            const elegidosPrevios = db.xiIdealAdmin[jornada] || Array(11).fill("");
+            const opcionesJugadores = db.jugadores.map(j => `<option value="${j.id}">${j.nombre}</option>`).join('');
+
+            for(let i = 0; i < 11; i++) {
+                contenedor.innerHTML += `
+                    <div style="display:flex; flex-direction:column; background:#f4f4f4; padding:8px; border-radius:6px; border-left:3px solid var(--dark);">
+                        <label style="margin-bottom:2px; font-size:0.75rem;">📋 Futbolista Posición ${i+1}</label>
+                        <select class="select-pos-xi" data-index="${i}">
+                            <option value="">-- Dejar Vacante --</option>
+                            ${opcionesJugadores}
+                        </select>
+                    </div>`;
+            }
+
+            document.querySelectorAll('.select-pos-xi').forEach(sel => {
+                const idx = sel.dataset.index;
+                if(elegidosPrevios[idx]) sel.value = elegidosPrevios[idx];
+            });
+        }
+
+        function guardarXI() {
+            const jornada = document.getElementById('xi-admin-jornada').value;
+            let seleccion = [];
+            document.querySelectorAll('.select-pos-xi').forEach(sel => {
+                if(sel.value) seleccion.push(parseInt(sel.value));
+            });
+
+            db.xiIdealAdmin[jornada] = seleccion;
+            db.jugadores.forEach(j => {
+                if(!j.xiIdeal) j.xiIdeal = [];
+                j.xiIdeal = j.xiIdeal.filter(jorn => jorn !== parseInt(jornada));
+                if(seleccion.includes(j.id)) j.xiIdeal.push(parseInt(jornada));
+            });
+            guardarDB(); alert(`Alineación del XI Ideal (Jornada ${jornada}) guardada.`);
+        }
+
+        function generarLiguillaAutomatica() {
+            let estadisticas = db.equipos.map(eq => ({ id: eq.id, nombre: eq.nombre, pts: 0, dg: 0, gf: 0 }));
+            db.partidos.filter(p => p.jugado && p.jornada < 90).forEach(p => {
+                let loc = estadisticas.find(e => e.id === p.localId); let vis = estadisticas.find(e => e.id === p.visitaId);
+                if(loc && vis) {
+                    loc.gf += p.golesLocal; loc.dg += (p.golesLocal - p.golesVisita); vis.gf += p.golesVisita; vis.dg += (p.golesVisita - p.golesLocal);
+                    if(p.golesLocal > p.golesVisita) loc.pts += 3; else if(p.golesLocal < p.golesVisita) vis.pts += 3; else { loc.pts += 1; vis.pts += 1; }
+                }
+            });
+            estadisticas.sort((a,b) => b.pts - a.pts || b.dg - a.dg);
+            if(estadisticas.length < 4) return alert("Se requieren por lo menos 4 equipos registrados para iniciar la liguilla.");
+
+            if(!db.arbitros || db.arbitros.length === 0) {
+                return alert("Error: No puedes generar la liguilla sin antes registrar árbitros oficiales.");
+            }
+
+            const opcionesArbitros = db.arbitros.map(a => `<option value="${a.nombre}">${a.nombre} (${a.colegio})</option>`).join('');
+            
+            const divModal = document.createElement('div');
+            divModal.id = "modal-designacion-liguilla";
+            divModal.style = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center; z-index:9999;";
+            divModal.innerHTML = `
+                <div style="background:white; padding:25px; border-radius:10px; max-width:450px; width:90%; box-shadow:0 5px 15px rgba(0,0,0,0.3);">
+                    <h3 style="margin-top:0; color:#011f4b; border-bottom:2px solid #ffb703; padding-bottom:8px;">🏁 Designación Arbitral - Semifinales</h3>
+                    <p style="font-size:0.85rem; color:#555; margin-bottom:15px;">Selecciona manualmente al juez central para cada uno de los enfrentamientos oficiales de postemporada:</p>
+                    
+                    <div style="margin-bottom:15px;">
+                        <label style="font-weight:bold; font-size:0.9rem; display:block; margin-bottom:5px;">Llave 1: ${estadisticas[0].nombre} (1°) vs ${estadisticas[3].nombre} (4°)</label>
+                        <select id="sel-arb-semi1" style="width:100%; padding:10px; border-radius:6px; border:1px solid #ccc;">${opcionesArbitros}</select>
+                    </div>
+                    
+                    <div style="margin-bottom:20px;">
+                        <label style="font-weight:bold; font-size:0.9rem; display:block; margin-bottom:5px;">Llave 2: ${estadisticas[1].nombre} (2°) vs ${estadisticas[2].nombre} (3°)</label>
+                        <select id="sel-arb-semi2" style="width:100%; padding:10px; border-radius:6px; border:1px solid #ccc;">${opcionesArbitros}</select>
+                    </div>
+                    
+                    <div style="display:flex; gap:10px;">
+                        <button id="btn-cancelar-liguilla" style="flex:1; background:#6c757d; color:white; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer;">Cancelar</button>
+                        <button id="btn-confirmar-liguilla" style="flex:1; background:#ffb703; color:#011f4b; border:none; padding:10px; border-radius:6px; font-weight:bold; cursor:pointer;">Lanzar Liguilla 🚀</button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(divModal);
+
+            document.getElementById('btn-cancelar-liguilla').onclick = function() {
+                divModal.remove();
+            };
+
+            document.getElementById('btn-confirmar-liguilla').onclick = function() {
+                const arb1 = document.getElementById('sel-arb-semi1').value;
+                const arb2 = document.getElementById('sel-arb-semi2').value;
+
+                db.partidos = db.partidos.filter(p => p.jornada < 90); 
+                
+                db.partidos.push({ 
+                    id: Date.now()+1, 
+                    jornada: 99, 
+                    localId: estadisticas[0].id, 
+                    visitaId: estadisticas[3].id, 
+                    jugado: false, 
+                    golesLocal: 0, 
+                    golesVisita: 0, 
+                    estadoVivo: 'programado', 
+                    tarjetasDetalle:[],
+                    arbitro: arb1 
+                });
+                
+                db.partidos.push({ 
+                    id: Date.now()+2, 
+                    jornada: 99, 
+                    localId: estadisticas[1].id, 
+                    visitaId: estadisticas[2].id, 
+                    jugado: false, 
+                    golesLocal: 0, 
+                    golesVisita: 0, 
+                    estadoVivo: 'programado', 
+                    tarjetasDetalle:[],
+                    arbitro: arb2 
+                });
+                
+                db.liguillaActiva = true;
+                divModal.remove();
+                guardarDB();
+                alert("¡Liguilla Oficial Establecida! Los cruces y sus respectivos árbitros han sido cargados con éxito.");
+            };
+        }
+
+        function actualizarFormularios() {
+            const selects = ['admin-jug-equipo', 'admin-part-local', 'admin-part-visita'];
+            selects.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.innerHTML = db.equipos.map(eq => `<option value="${eq.id}">${eq.nombre}</option>`).join('');
+            });
+            
+            document.getElementById('admin-part-arbitro').innerHTML = '<option value="">-- Selecciona Árbitro Central --</option>' + 
+                db.arbitros.map(a => `<option value="${a.nombre}">${a.nombre} (${a.colegio})</option>`).join('');
+
+            document.getElementById('fichaje-jugador').innerHTML = '<option value="">-- Selecciona Jugador --</option>' + 
+                db.jugadores.map(j => `<option value="${j.id}">${j.nombre} (${db.equipos.find(e=>e.id===j.equipoId)?.nombre || 'Libre'})</option>`).join('');
+
+            document.getElementById('fichaje-destino').innerHTML = '<option value="libre">🕊️ Dejar Libre (Agente de Libertad)</option>' + 
+                db.equipos.map(e => `<option value="${e.id}">⚽ Trasladar a: ${e.nombre}</option>`).join('');
+
+            document.getElementById('admin-res-partido').innerHTML = '<option value="">-- Selecciona Partido --</option>' + db.partidos.filter(p => !p.jugado || p.estadoVivo === 'en_curso').map(p => `<option value="${p.id}">J${p.jornada}: ${db.equipos.find(e=>e.id===p.localId)?.nombre} vs ${db.equipos.find(e=>e.id===p.visitaId)?.nombre} [${p.estadoVivo || 'Programado'}]</option>`).join('');
+        }
+
+        function desplegarCargaIncidencias(partidoId) {
+            const contenedor = document.getElementById('contenedor-incidencias');
+            const lista = document.getElementById('lista-inputs-jugadores');
+            const selectMvp = document.getElementById('admin-res-mvp');
+            lista.innerHTML = '';
+            document.getElementById('lista-eventos-temporales').innerHTML = '';
+
+            if(!partidoId) {
+                document.getElementById('seccion-timeline-dinamica').style.display = 'none';
+                return contenedor.style.display = 'none';
+            }
+
+            const p = db.partidos.find(part => part.id === parseInt(partidoId));
+            
+            document.getElementById('admin-res-glocal').value = p.golesLocal || 0;
+            document.getElementById('admin-res-gvisita').value = p.golesVisita || 0;
+
+            const estado = p.estadoVivo || 'programado';
+            if(estado === 'en_curso') document.getElementById('txt-estado-actual').innerHTML = "🟢 Transmitiendo: EN VIVO";
+            else if(estado === 'finalizado') document.getElementById('txt-estado-actual').innerHTML = "🏁 Estatus: Finalizado";
+            else document.getElementById('txt-estado-actual').innerHTML = "📅 Estatus: Programado";
+
+            if(p.eventos) {
+                p.eventos.forEach(ev => {
+                    document.getElementById('lista-eventos-temporales').innerHTML += `<div style="background:#fff; padding:4px; border:1px solid #eee;">⏰ Minuto ${ev.min}' - [${ev.tipo.toUpperCase()}] de ${ev.desc}</div>`;
+                });
+            }
+
+            const jugadoresPartido = db.jugadores.filter(j => j.equipoId === p.localId || j.equipoId === p.visitaId);
+            const jugadoresHabilitados = jugadoresPartido.filter(j => !esJugadorSuspendidoEnJornada(j, p.jornada));
+
+            document.getElementById('seccion-timeline-dinamica').style.display = 'block';
+            if(estado === 'finalizado') document.getElementById('bloque-cronica-ia').style.display = 'block';
+
+            document.getElementById('time-jugador').innerHTML = '<option value="">-- Selecciona Jugador --</option>' + jugadoresHabilitados.map(j => `<option value="${j.nombre}">${j.nombre}</option>`).join('');
+            selectMvp.innerHTML = '<option value="">-- Seleccionar MVP --</option>' + jugadoresHabilitados.map(j => `<option value="${j.id}">${j.nombre}</option>`).join('');
+
+            jugadoresPartido.forEach(j => {
+                const castigado = esJugadorSuspendidoEnJornada(j, p.jornada);
+                lista.innerHTML += `
+                <div class="goleador-row fila-datos-jugador ${castigado ? 'suspendido-row' : ''}" data-jugadorid="${j.id}">
+                    <span>${j.nombre} ${castigado ? '❌ <b>(SUSPENDIDO)</b>' : ''}</span>
+                    <input type="number" class="in-gol" placeholder="0" min="0" ${castigado ? 'disabled' : ''}>
+                    <input type="number" class="in-amr" placeholder="0" min="0" max="2" ${castigado ? 'disabled' : ''}>
+                    <input type="number" class="in-rjs" placeholder="0" min="0" max="1" ${castigado ? 'disabled' : ''}>
+                </div>`;
+            });
+            contenedor.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>

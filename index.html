@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liga Premier de Acapulco - Sitio Oficial</title>
+    <style>
+        :root {
+            --primary: #005b96; --secondary: #6497b1; --dark: #011f4b; --light: #f3f8fb;
+            --card-bg: white; --text: #011f4b; --accent: #ffcc00; --success: #2ec4b6;
+            --danger: #e71d36; --warning: #ffb703; --border: #ddd;
+        }
+        [data-theme="dark"] {
+            --primary: #6497b1; --secondary: #005b96; --dark: #0b132b; --light: #1c2541;
+            --card-bg: #3a506b; --text: #ffffff; --accent: #ffcc00; --border: #5c7494;
+        }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; background-color: var(--light); color: var(--text); transition: background 0.3s, color 0.3s; }
+        header { background: linear-gradient(135deg, var(--dark), var(--primary)); color: white; padding: 25px; text-align: center; position: relative; }
+        header h1 { margin: 0; font-size: 2.2rem; }
+        header p { margin: 5px 0 0 0; color: var(--accent); font-weight: bold; }
+        .theme-switch { position: absolute; top: 20px; right: 20px; background: rgba(255,255,255,0.2); border: none; color: white; padding: 8px 12px; border-radius: 20px; cursor: pointer; font-weight: bold; }
+        nav { background-color: var(--dark); display: flex; justify-content: center; flex-wrap: wrap; position: sticky; top: 0; z-index: 100; }
+        nav a { color: white; padding: 15px 20px; text-decoration: none; font-weight: bold; text-transform: uppercase; font-size: 0.85rem; }
+        nav a:hover { color: var(--accent); background: rgba(255,255,255,0.1); }
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; }
+        .card-section { background: var(--card-bg); padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); margin-bottom: 35px; transition: background 0.3s; }
+        .header-section-flex { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--secondary); padding-bottom: 8px; margin-bottom: 15px; }
+        .header-section-flex h2 { border: none; margin: 0; padding: 0; color: var(--primary); }
+        .btn-export { background-color: #2ec4b6; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background-color: var(--primary); color: white; }
+        .row-equipo-click { cursor: pointer; transition: 0.2s; }
+        .row-equipo-click:hover { background-color: rgba(100, 151, 177, 0.15); }
+        .escudo-tab { width: 30px; height: 30px; object-fit: cover; border-radius: 50%; vertical-align: middle; margin-right: 10px; }
+        
+        .filter-container { display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap; }
+        input, select { padding: 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 1rem; background: var(--card-bg); color: var(--text); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; margin-top: 20px; }
+        .jugador-card { border: 1px solid var(--border); border-radius: 8px; text-align: center; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); background: var(--card-bg); cursor: pointer; transition: 0.2s; position: relative; }
+        .jugador-card:hover { transform: translateY(-5px); }
+        .jugador-card img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; }
+        .badge-suspendido { position: absolute; top: 10px; right: 10px; background: var(--danger); color: white; padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
+        .noticias-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 15px; }
+        .noticia-card { background: var(--light); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; }
+        .noticia-card img { width: 100%; height: 150px; object-fit: cover; }
+        .noticia-body { padding: 15px; flex: 1; }
+        .noticia-body h4 { margin: 0 0 10px 0; color: var(--primary); }
+        .noticia-badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; margin-bottom: 10px; }
+        .badge-aviso { background: #ffecc7; color: #b7791f; }
+        .badge-sancion { background: #fed7d7; color: #c53030; }
+        
+        .partidos-list { display: flex; flex-direction: column; gap: 15px; }
+        .partido-item { background: var(--light); border: 1px solid var(--border); padding: 15px; border-radius: 8px; transition: all 0.3s; }
+        .partido-principal { display: flex; justify-content: space-between; align-items: center; }
+        .partido-equipo { flex: 1; display: flex; align-items: center; font-weight: bold; }
+        .partido-equipo.local { justify-content: flex-end; text-align: right; }
+        .partido-equipo.visita { justify-content: flex-start; text-align: left; }
+        .marcador { background: var(--dark); color: white; padding: 5px 15px; border-radius: 20px; font-size: 1.1rem; font-weight: bold; }
+        .partido-detalles { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); font-size: 0.85rem; color: var(--text); opacity: 0.8; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 5px; }
+        .mvp-container { margin-top: 12px; background: linear-gradient(135deg, #ffecc7, #ffcc00); color: #011f4b; padding: 10px 15px; border-radius: 8px; display: flex; align-items: center; gap: 12px; font-weight: bold; border: 1px solid #e6b800; box-shadow: 0 2px 6px rgba(0,0,0,0.08); }
+        .mvp-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid white; }
+        .timeline-partido { margin-top: 10px; background: var(--card-bg); padding: 10px; border-radius: 6px; font-size: 0.85rem; border: 1px solid var(--border); border-left: 4px solid var(--primary); }
+        .timeline-evento { padding: 4px 0; border-bottom: 1px solid var(--light); color: var(--text); }
+        
+        .cancha { background: #2a9d8f; border: 4px solid white; border-radius: 12px; height: 500px; position: relative; margin-top: 20px; overflow: hidden; }
+        .linea-medio { position: absolute; top: 50%; left: 0; width: 100%; height: 2px; background: rgba(255,255,255,0.5); }
+        .circulo-medio { position: absolute; top: 50%; left: 50%; width: 100px; height: 100px; border: 2px solid rgba(255,255,255,0.5); border-radius: 50%; transform: translate(-50%, -50%); }
+        .xi-jugador { position: absolute; transform: translate(-50%, -50%); text-align: center; color: white; width: 80px; }
+        .xi-jugador img { width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; background: white; }
+        .xi-jugador p { margin: 2px 0; font-size: 0.75rem; font-weight: bold; background: rgba(0,0,0,0.6); border-radius: 4px; padding: 1px 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        
+        .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 200; overflow-y: auto; padding: 20px 0; }
+        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; text-align: center; position: relative; border: 1px solid var(--border); margin: auto; }
+        .modal-content img.perfil-foto { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; }
+        .close-modal { position: absolute; top: 15px; right: 15px; font-size: 1.5rem; cursor: pointer; background: none; border: none; color: var(--text); font-weight: bold; }
+        .modal-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top: 20px; }
+        .stat-box { background: var(--light); padding: 10px; border-radius: 8px; border-left: 4px solid var(--primary); }
+        
+        .plantilla-lista-box { text-align: left; margin-top: 20px; max-height: 250px; overflow-y: auto; border: 1px solid var(--border); padding: 10px; border-radius: 6px; }
+        .plantilla-item-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--light); font-size: 0.9rem; }
+        .hidden { display: none !important; }
+
+        @keyframes pulse-live {
+            0% { opacity: 0.3; }
+            50% { opacity: 1; }
+            100% { opacity: 0.3; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🏆 LIGA PREMIER DE ACAPULCO 🏆</h1>
+        <p>Portal Oficial - Estadísticas en Vivo</p>
+        <button class="theme-switch" onclick="toggleTheme()">🌓 Modo</button>
+    </header>
+
+    <nav>
+        <a href="#tablon-sec">Tablón</a>
+        <a href="#posiciones-sec">Posiciones</a>
+        <a href="#jornadas-sec">Jornadas</a>
+        <a href="#fichajes-sec">Libro de Pases</a>
+        <a href="#arbitros-sec">Árbitros</a>
+        <a href="#xi-sec">XI Ideal</a>
+        <a href="#goleo-sec">Goleo</a>
+        <a href="#disciplina-sec">Disciplina</a>
+        <a href="#jugadores-sec">Jugadores</a>
+    </nav>
+
+    <div class="container">
+        <!-- TABLÓN DE ANUNCIOS -->
+        <section id="tablon-sec" class="card-section">
+            <h2>📢 Tablón de Avisos y Sanciones Oficiales</h2>
+            <div id="noticias-contenedor" class="noticias-grid"></div>
+        </section>
+
+        <!-- POSICIONES -->
+        <section id="posiciones-sec" class="card-section">
+            <div class="header-section-flex">
+                <h2>Tabla de Posiciones Fases Regulares</h2>
+                <button class="btn-export" onclick="exportarTablaCSV()">📥 Descargar Excel</button>
+            </div>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr><th>Pos</th><th>Equipo</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>GF</th><th>GC</th><th>DG</th><th>Pts</th></tr>
+                    </thead>
+                    <tbody id="tabla-posiciones-body"></tbody>
+                </table>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 25px;">
+                <div style="background: var(--card-bg); padding:15px; border-radius:8px; border: 1px solid var(--border);">
+                    <h4 style="margin:0 0 10px 0; color:var(--success);">🔥 Mejores Ofensivas</h4>
+                    <table>
+                        <thead><tr><th>Pos</th><th>Equipo</th><th>GF</th></tr></thead>
+                        <tbody id="tabla-ofensiva-body"></tbody>
+                    </table>
+                </div>
+                <div style="background: var(--card-bg); padding:15px; border-radius:8px; border: 1px solid var(--border);">
+                    <h4 style="margin:0 0 10px 0; color:var(--danger);">🛡️ Muros Defensivos</h4>
+                    <table>
+                        <thead><tr><th>Pos</th><th>Equipo</th><th>GC</th></tr></thead>
+                        <tbody id="tabla-defensiva-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- JORNADAS Y EN VIVO -->
+        <section id="jornadas-sec" class="card-section">
+            <h2>Calendario & Resultados En Vivo</h2>
+            <div class="filter-container">
+                <select id="select-jornada-filtro">
+                    <option value="1">Jornada 1</option><option value="2">Jornada 2</option><option value="3">Jornada 3</option><option value="4">Jornada 4</option>
+                    <option value="99">Liguilla Semis</option><option value="100">Gran Final</option>
+                </select>
+            </div>
+            <div id="lista-partidos-jornada" class="partidos-list"></div>
+        </section>
+
+        <!-- LIBRO DE PASES DINÁMICO -->
+        <section id="fichajes-sec" class="card-section" style="border-top-color: #7209b7;">
+            <h2>🔄 Libro de Pases / Historial Mercantil</h2>
+            <p style="font-size:0.85rem; color:gray; margin-top:-10px; margin-bottom:15px;">Registro secuencial de altas, bajas y transferencias oficiales del torneo actual.</p>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr><th>📅 Fecha</th><th>🏃‍♂️ Futbolista</th><th>❌ Club Origen</th><th>⚽ Club Destino</th></tr>
+                    </thead>
+                    <tbody id="tabla-historial-fichajes-body"></tbody>
+                </table>
+            </div>
+        </section>
+        
+        <!-- PANEL DEL COLEGIO ARBITRAL -->
+        <section id="arbitros-sec" class="card-section" style="border-top-color: #ffb703;">
+            <h2>⚖️ Panel del Colegio Arbitral</h2>
+            <p style="font-size:0.85rem; color:gray; margin-top:-10px; margin-bottom:15px;">Estadísticas de rendimiento y acumulación de incidencias para jueces centrales.</p>
+            <div id="grid-arbitros" class="grid"></div>
+        </section>
+
+        <!-- XI IDEAL -->
+        <section id="xi-sec" class="card-section">
+            <h2>🏅 El XI Ideal de la Semana</h2>
+            <div class="filter-container">
+                <select id="select-jornada-xi" onchange="renderXI()">
+                    <option value="1">Jornada 1</option><option value="2">Jornada 2</option><option value="3">Jornada 3</option><option value="4">Jornada 4</option>
+                </select>
+            </div>
+            <div class="cancha" id="contenedor-cancha">
+                <div class="linea-medio"></div>
+                <div class="circulo-medio"></div>
+                <div id="posiciones-cancha"></div>
+            </div>
+        </section>
+
+        <!-- GOLEO -->
+        <section id="goleo-sec" class="card-section">
+            <h2>Goleo Individual</h2>
+            <table class="table-responsive">
+                <thead><tr><th>Pos</th><th>Jugador</th><th>Equipo</th><th>Goles ⚽</th></tr></thead>
+                <tbody id="tabla-goleo-body"></tbody>
+            </table>
+        </section>
+
+        <!-- DISCIPLINA -->
+        <section id="disciplina-sec" class="card-section">
+            <h2>Tabla de Disciplina Estricta</h2>
+            <table class="table-responsive">
+                <thead><tr><th>Pos</th><th>Jugador</th><th>Equipo</th><th>🟨 Totales</th><th>🟥 Totales</th><th>Estado Actual</th></tr></thead>
+                <tbody id="tabla-disciplina-body"></tbody>
+            </table>
+        </section>
+
+        <!-- BUSCADOR -->
+        <section id="jugadores-sec" class="card-section">
+            <h2>Fichas Técnicas</h2>
+            <div class="filter-container">
+                <input type="text" id="input-buscar-jugador" placeholder="🔍 Buscar jugador...">
+                <select id="select-filtrar-equipo"><option value="todos">Todos</option></select>
+            </div>
+            <div id="grid-jugadores" class="grid"></div>
+        </section>
+    </div>
+
+    <!-- MODALES -->
+    <div id="ficha-modal" class="modal hidden">
+        <div class="modal-content">
+            <button class="close-modal" onclick="cerrarModal('ficha-modal')">×</button>
+            <img id="modal-foto" class="perfil-foto" src="">
+            <h3 id="modal-nombre"></h3>
+            <p id="modal-equipo"></p>
+            <p id="modal-posicion"></p>
+            <div class="modal-stats">
+                <div class="stat-box"><span>Goles</span><strong id="modal-goles"></strong></div>
+                <div class="stat-box"><span>Destacado MVP</span><strong id="modal-mvps"></strong></div>
+                <div class="stat-box"><span>🟨 Amarillas</span><strong id="modal-amarillas"></strong></div>
+                <div class="stat-box"><span>🟥 Rojas</span><strong id="modal-rojas"></strong></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let db = JSON.parse(localStorage.getItem('liga_premier_db')) || { 
+            equipos: [], jugadores: [], partidos: [], comunicados: [], 
+            arbitros: [], xiIdealAdmin: {}, registrosCerrados: false, liguillaActiva: false,
+            historialFichajes: []
+        };
+        let estadisticasEquipos = [];
+
+        const defaultEscudo = "https://placehold.co/100?text=CLUB";
+        const defaultFotoJugador = "https://placehold.co/150?text=JUGADOR";
+
+        document.addEventListener("DOMContentLoaded", () => {
+            document.getElementById('select-jornada-filtro').addEventListener('change', actualizarVistaJornadas);
+            document.getElementById('input-buscar-jugador').addEventListener('input', filtrarJugadores);
+            document.getElementById('select-filtrar-equipo').addEventListener('change', filtrarJugadores);
+            if(localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+
+            window.addEventListener('storage', () => {
+                db = JSON.parse(localStorage.getItem('liga_premier_db')) || { equipos: [], jugadores: [], partidos: [], comunicados: [], historialFichajes: [], arbitros: [] };
+                actualizarFiltros();
+                actualizarVistaTodo();
+            });
+
+            actualizarFiltros();
+            actualizarVistaTodo();
+            
+            setInterval(actualizarVistaJornadas, 4000);
+        });
+
+        function toggleTheme() {
+            if(document.documentElement.getAttribute('data-theme') === 'dark') {
+                document.documentElement.removeAttribute('data-theme');
+                localStorage.setItem('theme', 'light');
+            } else {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        function actualizarFiltros() {
+            document.getElementById('select-filtrar-equipo').innerHTML = '<option value="todos">Todos los Equipos</option>' + 
+                db.equipos.map(eq => `<option value="${eq.id}">${eq.nombre}</option>`).join('');
+        }
+
+        function verificarSuspensionEnJornada(jugador, jornadaFiltro) {
+            let amarillasAcumuladas = 0;
+            let suspendido = false;
+            let tarjetasPrevias = (db.partidos || [])
+                .filter(p => p.jugado && p.jornada < jornadaFiltro && p.tarjetasDetalle)
+                .flatMap(p => p.tarjetasDetalle.filter(t => t.jugadorId === jugador.id));
+
+            tarjetasPrevias.forEach(t => {
+                if (t.tipo === 'roja') suspendido = true; 
+                if (t.tipo === 'amarilla') amarillasAcumuladas++;
+            });
+            if (amarillasAcumuladas >= 3) suspendido = true;
+            return suspendido;
+        }
+
+        function actualizarVistaTodo() {
+            const contNoticias = document.getElementById('noticias-contenedor');
+            contNoticias.innerHTML = (db.comunicados || []).map(c => `
+                <div class="noticia-card">
+                    ${c.imagen ? `<img src="${c.imagen}">` : ''}
+                    <div class="noticia-body">
+                        <span class="noticia-badge badge-${c.tipo}">${c.tipo}</span>
+                        <h4>${c.titulo}</h4>
+                        <p style="font-size:0.85rem; margin:0; opacity:0.9; white-space: pre-line;">${c.contenido}</p>
+                        <small style="color:gray; display:block; margin-top:10px;">📅 Publicado: ${c.fecha || 'Reciente'}</small>
+                    </div>
+                </div>
+            `).join('') || '<p style="color:gray; font-size:0.9rem;">No hay avisos ni crónicas por el momento.</p>';
+
+            let estadisticas = db.equipos.map(eq => ({ id: eq.id, nombre: eq.nombre, escudo: eq.escudo || defaultEscudo, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, dg: 0, pts: 0 }));
+            db.partidos.forEach(p => {
+                if(!p.jugado && p.estadoVivo !== 'finalizado') return;
+                let loc = estadisticas.find(e => e.id === p.localId);
+                let vis = estadisticas.find(e => e.id === p.visitaId);
+                if(loc && vis) {
+                    loc.pj++; vis.pj++; loc.gf += (p.golesLocal || 0); loc.gc += (p.golesVisita || 0); vis.gf += (p.golesVisita || 0); vis.gc += (p.golesLocal || 0);
+                    if(p.golesLocal > p.golesVisita) { loc.pg++; loc.pts += 3; vis.pp++; }
+                    else if(p.golesLocal < p.golesVisita) { vis.pg++; vis.pts += 3; loc.pp++; }
+                    else { loc.pe++; loc.pts += 1; vis.pe++; vis.pts += 1; }
+                    loc.dg = loc.gf - loc.gc; vis.dg = vis.gf - vis.gc;
+                }
+            });
+
+            estadisticas.sort((a,b) => b.pts - a.pts || b.dg - a.dg);
+            estadisticasEquipos = estadisticas;
+
+            document.getElementById('tabla-posiciones-body').innerHTML = estadisticas.map((eq, idx) => `
+                <tr class="row-equipo-click"><td><b>${idx + 1}</b></td><td><img class="escudo-tab" src="${eq.escudo}">${eq.nombre}</td><td>${eq.pj}</td><td>${eq.pg}</td><td>${eq.pe}</td><td>${eq.pp}</td><td>${eq.gf}</td><td>${eq.gc}</td><td>${eq.dg}</td><td><b>${eq.pts}</b></td></tr>
+            `).join('');
+
+            let ofensivas = [...estadisticas].sort((a,b) => b.gf - a.gf);
+            document.getElementById('tabla-ofensiva-body').innerHTML = ofensivas.map((eq, idx) => `<tr><td><b>${idx+1}</b></td><td>${eq.nombre}</td><td><b>${eq.gf} ⚽</b></td></tr>`).join('');
+
+            let defensivas = [...estadisticas].sort((a,b) => a.gc - b.gc);
+            document.getElementById('tabla-defensiva-body').innerHTML = defensivas.map((eq, idx) => `<tr><td><b>${idx+1}</b></td><td>${eq.nombre}</td><td><b>${eq.gc} 🛡️</b></td></tr>`).join('');
+
+            const tablaFichajes = document.getElementById('tabla-historial-fichajes-body');
+            if(tablaFichajes) {
+                tablaFichajes.innerHTML = (db.historialFichajes || []).map(f => `
+                    <tr>
+                        <td>${f.fecha}</td>
+                        <td><b>${f.jugador}</b></td>
+                        <td style="color:var(--danger); font-weight:bold;">${f.origen}</td>
+                        <td style="color:var(--success); font-weight:bold;">${f.destino}</td>
+                    </tr>
+                `).join('') || '<tr><td colspan="4" style="color:gray; text-align:center;">Sin transacciones oficiales asentadas.</td></tr>';
+            }
+
+            actualizarVistaJornadas();
+            actualizarVistaArbitros();
+            actualizarVistaGoleo();
+            actualizarVistaDisciplina();
+            filtrarJugadores();
+            renderXI();
+        }
+
+        // SECCIÓN NUEVA: PROCESO DEL COLEGIO ARBITRAL (AMARILLAS/ROJAS Y PARTIDOS PITADOS)
+        function actualizarVistaArbitros() {
+            const grid = document.getElementById('grid-arbitros');
+            if(!db.arbitros || db.arbitros.length === 0) {
+                grid.innerHTML = '<p style="color:gray;">No hay registros del colegio arbitral en la base de datos.</p>';
+                return;
+            }
+
+            let html = '';
+            db.arbitros.forEach(arb => {
+                let partidosPitados = 0;
+                let amarillasMostradas = 0;
+                let rojasMostradas = 0;
+
+                (db.partidos || []).forEach(p => {
+                    // Contamos los partidos donde este árbitro estuvo a cargo y ya se dictaminó sentencia oficial
+                    if (p.jugado && (p.arbitro === arb.nombre || p.arbitro === arb.id)) {
+                        partidosPitados++;
+                        if (p.tarjetasDetalle) {
+                            amarillasMostradas += p.tarjetasDetalle.filter(t => t.tipo === 'amarilla').length;
+                            rojasMostradas += p.tarjetasDetalle.filter(t => t.tipo === 'roja').length;
+                        }
+                    }
+                });
+
+                html += `
+                    <div class="jugador-card" style="border-top: 4px solid var(--warning);">
+                        <img src="${arb.foto || defaultFotoJugador}" style="border: 3px solid #eee;">
+                        <h3 style="margin: 10px 0 5px 0;">${arb.nombre}</h3>
+                        <p style="margin: 0; color: gray; font-size: 0.85rem;">Colegio: ${arb.colegio || 'Independiente'}</p>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: 15px; background: var(--light); padding: 8px; border-radius: 6px;">
+                            <div style="display:flex; flex-direction:column; align-items:center;">
+                                <span style="font-size:1.2rem;">🏃</span>
+                                <strong style="font-size:0.9rem;">${partidosPitados}</strong>
+                                <span style="font-size:0.65rem; color:gray;">Juegos</span>
+                            </div>
+                            <div style="display:flex; flex-direction:column; align-items:center;">
+                                <span style="font-size:1.2rem;">🟨</span>
+                                <strong style="font-size:0.9rem;">${amarillasMostradas}</strong>
+                                <span style="font-size:0.65rem; color:gray;">Tarjetas</span>
+                            </div>
+                            <div style="display:flex; flex-direction:column; align-items:center;">
+                                <span style="font-size:1.2rem;">🟥</span>
+                                <strong style="font-size:0.9rem;">${rojasMostradas}</strong>
+                                <span style="font-size:0.65rem; color:gray;">Expulsiones</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            grid.innerHTML = html;
+        }
+
+        function actualizarVistaJornadas() {
+            const jFiltro = parseInt(document.getElementById('select-jornada-filtro').value);
+            const contenedor = document.getElementById('lista-partidos-jornada');
+            const partidos = db.partidos.filter(p => p.jornada === jFiltro);
+            
+            contenedor.innerHTML = partidos.map(p => {
+                const nameL = db.equipos.find(e => e.id === p.localId);
+                const nameV = db.equipos.find(e => e.id === p.visitaId);
+                const estado = p.estadoVivo || 'programado';
+                
+                let badgeVivo = '';
+                let estiloCard = '';
+                let marcador = 'VS';
+
+                if(estado === 'en_curso') {
+                    badgeVivo = `<span style="background:var(--danger); color:white; padding:3px 8px; border-radius:10px; font-size:0.72rem; font-weight:bold; animation: pulse-live 1s infinite; margin-left:10px;">• EN VIVO</span>`;
+                    estiloCard = 'border: 2px solid var(--danger); background: #fffefe;';
+                    marcador = `${p.golesLocal || 0} - ${p.golesVisita || 0}`;
+                } else if(p.jugado || estado === 'finalizado') {
+                    marcador = `${p.golesLocal} - ${p.golesVisita}`;
+                }
+
+                let eventosHtml = (estado === 'en_curso' || p.jugado) && p.eventos?.length > 0 ? 
+                    `<div class="timeline-partido"><strong>⏱️ Acciones Minuto a Minuto:</strong>` + p.eventos.map(ev => `<div class="timeline-evento">⏰ ${ev.min}' - [<b>${ev.tipo.toUpperCase()}</b>]: ${ev.desc}</div>`).join('') + `</div>` : '';
+                
+                let mvpHtml = p.jugado && p.mvpJugadorId ? `<div class="mvp-container"><span>⭐ MVP:</span><span>${db.jugadores.find(j=>j.id===p.mvpJugadorId)?.nombre}</span></div>` : '';
+
+                return `<div class="partido-item" style="${estiloCard}">
+                    <div class="partido-principal">
+                        <div class="partido-equipo local"><img class="escudo-tab" src="${nameL?.escudo || defaultEscudo}">${nameL?.nombre}</div>
+                        <div class="marcador" style="${estado === 'en_curso' ? 'background:var(--danger);' : ''}">${marcador}</div>
+                        <div class="partido-equipo visita"><img class="escudo-tab" src="${nameV?.escudo || defaultEscudo}">${nameV?.nombre}</div>
+                    </div>
+                    <div class="partido-detalles">
+                        <div>📅 <b>Fecha:</b> ${p.fecha || 'Por definir'} | ⏰ <b>Hora:</b> ${p.hora || '--:--'} ${badgeVivo}</div>
+                        <div>🏟️ <b>Cancha:</b> ${p.estadio || 'Principal'}</div>
+                        <div>🏁 <b>Árbitro Central:</b> ${p.arbitro || 'Por designar'}</div>
+                    </div>
+                    ${mvpHtml}${eventosHtml}
+                </div>`;
+            }).join('') || '<p style="color:gray;">No hay encuentros agendados.</p>';
+        }
+
+        const coordsXI = [{ t: 88, l: 50 }, { t: 68, l: 20 }, { t: 72, l: 40 }, { t: 72, l: 60 }, { t: 68, l: 80 }, { t: 45, l: 25 }, { t: 50, l: 50 }, { t: 45, l: 75 }, { t: 20, l: 20 }, { t: 15, l: 50 }, { t: 20, l: 80 }];
+        function renderXI() {
+            const jSelected = parseInt(document.getElementById('select-jornada-xi').value);
+            const cancha = document.getElementById('posiciones-cancha'); cancha.innerHTML = '';
+            let elegidos = db.jugadores.filter(j => j.xiIdeal && j.xiIdeal.includes(jSelected));
+            for (let i = 0; i < 11; i++) {
+                const pos = coordsXI[i]; const jug = elegidos[i];
+                cancha.innerHTML += jug ? `<div class="xi-jugador" style="top:${pos.t}%; left:${pos.l}%;"><img src="${jug.foto || defaultFotoJugador}"><p>${jug.nombre.split(' ')[0]}</p></div>` : `<div class="xi-jugador" style="top:${pos.t}%; left:${pos.l}%; opacity:0.3;"><img src="https://placehold.co/50?text=?"><p>-</p></div>`;
+            }
+        }
+
+        function actualizarVistaGoleo() {
+            let goleadores = [...db.jugadores].filter(j => j.goles > 0).sort((a,b) => b.goles - a.goles);
+            document.getElementById('tabla-goleo-body').innerHTML = goleadores.slice(0, 15).map((jug, idx) => `<tr><td><b>${idx + 1}</b></td><td>${jug.nombre}</td><td>${db.equipos.find(e => e.id === jug.equipoId)?.nombre || '🛡️ Libre'}</td><td><b>${jug.goles} ⚽</b></td></tr>`).join('');
+        }
+
+        function actualizarVistaDisciplina() {
+            document.getElementById('tabla-disciplina-body').innerHTML = db.jugadores.map((j, idx) => {
+                const actualmenteSuspendido = verificarSuspensionEnJornada(j, 999); 
+                return `<tr><td>${idx + 1}</td><td>${j.nombre}</td><td>${db.equipos.find(e => e.id === j.equipoId)?.nombre || 'Libre'}</td><td>${j.amarillas || 0}</td><td>${j.rojas || 0}</td><td>${actualmenteSuspendido ? '🟥 Castigado' : '🟢 Habilitado'}</td></tr>`;
+            }).join('');
+        }
+
+        function filtrarJugadores() {
+            const txt = document.getElementById('input-buscar-jugador').value.toLowerCase();
+            const eqFiltro = document.getElementById('select-filtrar-equipo').value;
+            let filtrados = db.jugadores.filter(j => j.nombre.toLowerCase().includes(txt) && (eqFiltro === 'todos' || j.equipoId === parseInt(eqFiltro)));
+            
+            document.getElementById('grid-jugadores').innerHTML = filtrados.map(j => `
+                <div class="jugador-card" onclick="verFicha(${j.id})">
+                    ${verificarSuspensionEnJornada(j, 999) ? '<div class="badge-suspendido">SUSPENDIDO</div>' : ''}
+                    <img src="${j.foto || defaultFotoJugador}"><h3>${j.nombre}</h3><p>${db.equipos.find(e => e.id === j.equipoId)?.nombre || '🛡️ Libre'}</p>
+                </div>
+            `).join('');
+        }
+
+        function verFicha(id) {
+            const j = db.jugadores.find(jug => jug.id === id);
+            let totalMvps = db.partidos.filter(p => p.mvpJugadorId === id).length;
+            document.getElementById('modal-foto').src = j.foto || defaultFotoJugador;
+            document.getElementById('modal-nombre').innerText = j.nombre;
+            document.getElementById('modal-equipo').innerText = db.equipos.find(e => e.id === j.equipoId)?.nombre || 'Agente Libre';
+            document.getElementById('modal-posicion').innerText = j.posicion;
+            document.getElementById('modal-goles').innerText = j.goles || 0;
+            document.getElementById('modal-mvps').innerText = totalMvps + " 🌟";
+            document.getElementById('modal-amarillas').innerText = j.amarillas || 0;
+            document.getElementById('modal-rojas').innerText = j.rojas || 0;
+            document.getElementById('ficha-modal').classList.remove('hidden');
+        }
+
+        function cerrarModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        function exportarTablaCSV() {
+            let csv = 'Pos,Equipo,PJ,G,E,P,GF,GC,DG,Pts\n';
+            estadisticasEquipos.forEach((eq, idx) => { csv += `${idx + 1},${eq.nombre},${eq.pj},${eq.pg},${eq.pe},${eq.pp},${eq.gf},${eq.gc},${eq.dg},${eq.pts}\n`; });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.setAttribute("download", "Tabla_Posiciones.csv"); link.click();
+        }
+    </script>
+</body>
+</html>
