@@ -379,6 +379,14 @@
 
         .cancha-preview span { font-size: 0.85rem; font-weight: 600; color: var(--dark); }
 
+        .xi-categoria { margin-top: 16px; }
+        .xi-categoria h4 { margin: 0 0 8px; font-size: 0.9rem; color: var(--dark); }
+        .xi-checkbox-lista { display: flex; flex-wrap: wrap; gap: 8px; }
+        .xi-chip { display: flex; align-items: center; gap: 6px; background: #f0f4f8; border: 1px solid var(--border); border-radius: 20px; padding: 6px 12px; font-size: 0.78rem; cursor: pointer; user-select: none; }
+        .xi-chip:has(input:checked) { background: #fff3cd; border-color: #ffb703; font-weight: 700; }
+        .xi-chip input { margin: 0; }
+        .xi-guardado-card { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; background: #fafcff; }
+
         .hidden { display: none !important; }
     </style>
 </head>
@@ -579,6 +587,41 @@
                 <button type="submit" style="background:var(--secondary);">Ejecutar Traspaso</button>
             </form>
         </div>
+    </div>
+
+    <!-- ONCE IDEAL DE LA SEMANA -->
+    <div class="admin-box" style="margin-top: 25px; border-top-color: #ffb703;">
+        <h3>🌟 Once Ideal de la Semana</h3>
+        <p style="font-size:0.8rem; color:#555; margin-top:-8px;">Elige a los mejores jugadores de la jornada según su posición registrada, y designa al MVP de la semana.</p>
+
+        <label>Jornada:</label>
+        <input type="number" id="xi-jornada" min="1" placeholder="Ej. 1" style="max-width:140px;">
+
+        <div class="xi-categoria">
+            <h4>🧤 Portero</h4>
+            <div id="xi-lista-portero" class="xi-checkbox-lista"></div>
+        </div>
+        <div class="xi-categoria">
+            <h4>🛡️ Defensas</h4>
+            <div id="xi-lista-defensa" class="xi-checkbox-lista"></div>
+        </div>
+        <div class="xi-categoria">
+            <h4>⚙️ Medios</h4>
+            <div id="xi-lista-medio" class="xi-checkbox-lista"></div>
+        </div>
+        <div class="xi-categoria">
+            <h4>🎯 Delanteros</h4>
+            <div id="xi-lista-delantero" class="xi-checkbox-lista"></div>
+        </div>
+
+        <label style="margin-top:14px;">⭐ MVP de la Semana:</label>
+        <select id="xi-mvp">
+            <option value="">-- Selecciona Jugador --</option>
+        </select>
+
+        <button type="button" onclick="guardarOnceIdeal()" style="background:#ffb703; margin-top:14px;">Guardar Once Ideal</button>
+
+        <div id="xi-lista-guardados" style="margin-top:22px;"></div>
     </div>
 
     <!-- MÓDULO: GESTIÓN, EDICIÓN Y ELIMINACIÓN -->

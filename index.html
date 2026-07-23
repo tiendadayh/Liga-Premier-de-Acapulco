@@ -540,11 +540,12 @@
                 let eventosHtml = '';
                 if (p.eventos && p.eventos.length) {
                     const iconoEvento = { gol: '⚽', autogol: '❌', amarilla: '🟨', roja: '🟥' };
+                    const etiquetaEvento = { gol: 'GOL', autogol: 'AUTOGOL', amarilla: 'Tarjeta Amarilla', roja: 'Tarjeta Roja' };
                     const eventosOrdenados = [...p.eventos].sort((a, b) => a.min - b.min);
                     eventosHtml = `<div style="margin-top:10px; font-size:0.78rem; background:#fff; border:1px solid var(--border); padding:8px 10px; border-radius:6px;">
                         <strong>⏱️ Incidencias del Partido:</strong>
                         <div style="display:flex; flex-direction:column; gap:3px; margin-top:5px;">
-                            ${eventosOrdenados.map(ev => `<span>${iconoEvento[ev.tipo] || '•'} Min ${ev.min}' — ${ev.desc}</span>`).join('')}
+                            ${eventosOrdenados.map(ev => `<span>${iconoEvento[ev.tipo] || '•'} Min ${ev.min}' — <strong>${etiquetaEvento[ev.tipo] || ''}</strong> de ${ev.desc}</span>`).join('')}
                         </div>
                     </div>`;
                 }
@@ -569,7 +570,7 @@
                                 <img class="partido-escudo" src="${escudoL}" alt="${nameL}">
                                 <span class="partido-nombre-equipo">${nameL}</span>
                             </div>
-                            <div class="marcador">${p.jugado ? `${p.golesLocal} - ${p.golesVisita}` : 'VS'}${pen}</div>
+                            <div class="marcador">${(p.jugado || p.estadoVivo === 'en_curso') ? `${p.golesLocal || 0} - ${p.golesVisita || 0}` : 'VS'}${pen}</div>
                             <div class="partido-equipo-visual visita" onclick="verEquipo(${p.visitaId})">
                                 <img class="partido-escudo" src="${escudoV}" alt="${nameV}">
                                 <span class="partido-nombre-equipo">${nameV}</span>
