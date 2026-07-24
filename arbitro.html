@@ -8,6 +8,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
     <style>
         :root {
             --primary: #d90429;
@@ -304,6 +307,22 @@
 </head>
 
 <body>
+
+    <!-- PANTALLA DE ACCESO -->
+    <div id="pantalla-login" style="position:fixed; inset:0; z-index:99999; background:linear-gradient(135deg, var(--dark, #011f4b), var(--primary-dark, #a30320)); display:flex; align-items:center; justify-content:center; padding:20px;">
+        <div style="background:#fff; border-radius:14px; padding:32px; max-width:360px; width:100%; box-shadow:0 10px 40px rgba(0,0,0,0.35); text-align:center;">
+            <h2 style="margin-top:0; color:var(--primary-dark, #a30320);">🔒 Acceso Árbitro</h2>
+            <form id="form-login-arbitro" style="text-align:left;">
+                <label style="font-size:0.85rem; font-weight:600;">Correo</label>
+                <input type="email" id="login-email" required style="width:100%; padding:10px; margin:6px 0 14px; box-sizing:border-box; border:1px solid #ccc; border-radius:6px;">
+                <label style="font-size:0.85rem; font-weight:600;">Contraseña</label>
+                <input type="password" id="login-password" required style="width:100%; padding:10px; margin:6px 0 14px; box-sizing:border-box; border:1px solid #ccc; border-radius:6px;">
+                <button type="submit" style="width:100%; padding:12px; background:var(--primary, #d90429); color:#fff; border:none; border-radius:8px; font-weight:700; font-size:1rem; cursor:pointer;">Entrar</button>
+            </form>
+            <p id="login-error" style="color:#c62828; font-size:0.85rem; margin:12px 0 0; min-height:1.1em;"></p>
+        </div>
+    </div>
+
     <div class="wrap">
         <header>
             <div class="arbitro-header-content">
@@ -313,6 +332,7 @@
                     <h1>🎙️ Panel del Árbitro</h1>
                     <p>Liga Premier de Acapulco - Cédula Oficial del Partido</p>
                 </div>
+                <button type="button" onclick="cerrarSesion()" style="margin-left:auto; background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.4); color:#fff; padding:8px 16px; border-radius:8px; cursor:pointer; white-space:nowrap;">🚪 Cerrar sesión</button>
             </div>
         </header>
 
@@ -524,20 +544,110 @@
     </div>
 
     <script>
-        let db = JSON.parse(localStorage.getItem('liga_premier_db')) || {
+        // ==== Firebase: sincronización en tiempo real ====
+        const firebaseConfig = {
+            apiKey: "AIzaSyDG07c_D4qtCJXap9J1ppU8xLk3IdWYOXo",
+            authDomain: "liga-premier-acapulco.firebaseapp.com",
+            databaseURL: "https://liga-premier-acapulco-default-rtdb.firebaseio.com",
+            projectId: "liga-premier-acapulco",
+            storageBucket: "liga-premier-acapulco.firebasestorage.app",
+            messagingSenderId: "426642299369",
+            appId: "1:426642299369:web:b3486f21982fd5f3515378"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const dbRef = firebase.database().ref('liga_premier_db');
+        const auth = firebase.auth();
+
+        document.getElementById('form-login-arbitro').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const pass = document.getElementById('login-password').value;
+            const errorEl = document.getElementById('login-error');
+            errorEl.textContent = '';
+            auth.signInWithEmailAndPassword(email, pass)
+                .catch(() => {
+                    errorEl.textContent = 'Correo o contraseña incorrectos.';
+                });
+        });
+
+        function cerrarSesion() {
+            if (confirm('¿Cerrar sesión?')) auth.signOut();
+        }
+
+        let usuarioActual = null;
+        let datosListos = false;
+
+        auth.onAuthStateChanged((user) => {
+            usuarioActual = user;
+            document.getElementById('pantalla-login').style.display = user ? 'none' : 'flex';
+            if (user) intentarAutoSeleccion();
+        });
+
+        function intentarAutoSeleccion() {
+            if (!usuarioActual || !datosListos) return;
+            const propio = db.arbitros.find(a => a.email && a.email.toLowerCase() === usuarioActual.email.toLowerCase());
+            const avisoVinculo = document.getElementById('sin-vinculo-aviso');
+            if (propio) {
+                const selectorArb = document.getElementById('arbitro-selector');
+                if (selectorArb && selectorArb.value !== propio.nombre) {
+                    selectorArb.value = propio.nombre;
+                    cargarPartidosDelArbitro(propio.nombre);
+                    mostrarPerfilArbitro(propio.nombre);
+                }
+                if (avisoVinculo) avisoVinculo.classList.add('hidden');
+            } else if (avisoVinculo) {
+                avisoVinculo.classList.remove('hidden');
+            }
+        }
+
+        let db = {
             equipos: [], jugadores: [], partidos: [], comunicados: [],
             arbitros: [], xiIdealAdmin: {}, registrosCerrados: false, liguillaActiva: false,
             historialFichajes: [], solicitudes: [], finanzas: {}, votosMvp: {}
         };
-        if (!db.arbitros) db.arbitros = [];
-        if (!db.partidos) db.partidos = [];
-        if (!db.finanzas) db.finanzas = {};
+
+        function aplicarValoresPorDefecto() {
+            if (!db.arbitros) db.arbitros = [];
+            if (!db.partidos) db.partidos = [];
+            if (!db.finanzas) db.finanzas = {};
+        }
+        aplicarValoresPorDefecto();
 
         let arbitroActual = '';
 
         function guardarDB() {
-            localStorage.setItem('liga_premier_db', JSON.stringify(db));
+            aplicarValoresPorDefecto();
+            dbRef.set(db).catch(err => {
+                console.error('Error al guardar en Firebase:', err);
+                alert('No se pudo sincronizar con la nube. Revisa tu conexión a internet.');
+            });
         }
+
+        function poblarSelectorArbitros() {
+            const selectorArb = document.getElementById('arbitro-selector');
+            if (!selectorArb) return;
+            const seleccionPrevia = selectorArb.value;
+            if (db.arbitros.length === 0) {
+                document.getElementById('sin-arbitros-aviso').classList.remove('hidden');
+            } else {
+                document.getElementById('sin-arbitros-aviso').classList.add('hidden');
+                selectorArb.innerHTML = '<option value="">-- Selecciona tu nombre --</option>' +
+                    db.arbitros.map(a => `<option value="${a.nombre}">${a.nombre} (${a.colegio})</option>`).join('');
+                if (seleccionPrevia) selectorArb.value = seleccionPrevia;
+            }
+        }
+
+        // Escucha cambios en tiempo real. No se re-renderiza toda la vista para no
+        // interrumpir al árbitro mientras captura una cédula; solo se refresca la
+        // lista de árbitros disponibles y se mantiene 'db' siempre actualizada.
+        dbRef.on('value', (snapshot) => {
+            const datos = snapshot.val();
+            if (datos) db = datos;
+            aplicarValoresPorDefecto();
+            poblarSelectorArbitros();
+            datosListos = true;
+            intentarAutoSeleccion();
+        });
 
         function asegurarFinanzas(eqId) {
             if (!db.finanzas[eqId]) db.finanzas[eqId] = { inscripcionPagada: false, adeudoArbitrajes: 0, multasTarjetas: 0 };
@@ -568,13 +678,7 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             const selectorArb = document.getElementById('arbitro-selector');
-
-            if (db.arbitros.length === 0) {
-                document.getElementById('sin-arbitros-aviso').classList.remove('hidden');
-            } else {
-                selectorArb.innerHTML = '<option value="">-- Selecciona tu nombre --</option>' +
-                    db.arbitros.map(a => `<option value="${a.nombre}">${a.nombre} (${a.colegio})</option>`).join('');
-            }
+            poblarSelectorArbitros();
 
             selectorArb.addEventListener('change', (e) => {
                 cargarPartidosDelArbitro(e.target.value);
