@@ -406,13 +406,28 @@
         </div>
     </header>
 
+    <!-- PUBLICACIÓN MANUAL DE CAMBIOS -->
+    <div id="box-publicar" class="admin-box" style="border-top-color: var(--primary); background: #fff8f0; margin-bottom: 25px; position: relative; z-index: 1;">
+        <h3>📤 Publicar en la Web</h3>
+        <p style="font-size:0.85rem; color:#555; margin-top:-6px;">
+            Tus cambios se quedan aquí, en esta pantalla, hasta que presiones "Publicar cambios".
+            Mientras no publiques, el sitio público y el árbitro no verán tus ediciones.
+        </p>
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:10px;">
+            <button type="button" id="btn-publicar-cambios" onclick="publicarCambios()"
+                style="background:var(--primary); font-weight:700; padding:12px 22px; font-size:1rem;">
+                📤 Publicar cambios
+            </button>
+            <span id="estado-publicacion" style="font-size:0.9rem; font-weight:600;"></span>
+        </div>
+    </div>
+
     <!-- RESPALDO Y RESTAURACIÓN DE DATOS -->
     <div class="admin-box" style="border-top-color: #455a64; background: #f7f9fa; margin-bottom: 25px; position: relative; z-index: 1;">
         <h3>💾 Respaldo de Datos</h3>
         <p style="font-size:0.85rem; color:#555; margin-top:-6px;">
-            Todos los datos de la liga viven únicamente en este navegador. Descarga una copia de seguridad
-            periódicamente y guárdala en un lugar seguro — si se borra el historial o la caché del navegador,
-            se pierde todo si no tienes un respaldo.
+            Descarga una copia de seguridad periódicamente y guárdala en un lugar seguro. Restaurar un
+            respaldo aquí lo publica de inmediato en la web, reemplazando los datos actuales.
         </p>
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
             <button type="button" onclick="exportarBackupDB()" style="background:#455a64;">⬇️ Descargar copia de seguridad (.json)</button>
@@ -810,21 +825,79 @@
             renderizarGestion();
         }
 
+        // ==== Publicación manual ====
+        // Mientras haya cambios sin publicar, no se sobrescribe 'db' con lo que
+        // llegue de Firebase (para no perder ediciones locales del administrador).
+        let cambiosPendientes = false;
+        let publicando = false;
+
+        function actualizarIndicadorPublicar(hayCambiosRemotos) {
+            const el = document.getElementById('estado-publicacion');
+            const btn = document.getElementById('btn-publicar-cambios');
+            if (!el || !btn) return;
+            if (publicando) {
+                el.textContent = '⏳ Publicando...';
+                el.style.color = '#8a6d00';
+                btn.disabled = true;
+            } else if (cambiosPendientes) {
+                el.textContent = '🟠 Tienes cambios sin publicar';
+                el.style.color = '#c66900';
+                btn.disabled = false;
+            } else {
+                el.textContent = '✅ Todo publicado';
+                el.style.color = '#2e7d32';
+                btn.disabled = false;
+            }
+            if (hayCambiosRemotos) {
+                el.textContent += ' — hay novedades del árbitro/sitio esperando (se cargarán al publicar o recargar)';
+            }
+        }
+
         function guardarDB() {
             aplicarValoresPorDefecto();
-            dbRef.set(db).catch(err => {
-                console.error('Error al guardar en Firebase:', err);
-                alert('No se pudo sincronizar con la nube. Revisa tu conexión a internet.');
-            });
+            cambiosPendientes = true;
+            actualizarIndicadorPublicar();
             renderizarTodoAdmin();
         }
 
-        // Escucha cambios en tiempo real (propios y de arbitro.html / index.html)
+        function publicarCambios() {
+            aplicarValoresPorDefecto();
+            publicando = true;
+            actualizarIndicadorPublicar();
+            dbRef.set(db)
+                .then(() => {
+                    cambiosPendientes = false;
+                })
+                .catch(err => {
+                    console.error('Error al publicar en Firebase:', err);
+                    alert('❌ No se pudo publicar. Revisa tu conexión a internet e intenta de nuevo.');
+                })
+                .finally(() => {
+                    publicando = false;
+                    actualizarIndicadorPublicar();
+                });
+        }
+
+        // Escucha cambios en tiempo real (de arbitro.html / index.html).
+        // Si el administrador tiene cambios locales sin publicar, NO se sobrescriben.
         dbRef.on('value', (snapshot) => {
             const datos = snapshot.val();
-            if (datos) db = datos;
+            if (!datos) return;
+            if (cambiosPendientes || publicando) {
+                actualizarIndicadorPublicar(true);
+                return;
+            }
+            db = datos;
             aplicarValoresPorDefecto();
             renderizarTodoAdmin();
+            actualizarIndicadorPublicar();
+        });
+
+        window.addEventListener('beforeunload', (e) => {
+            if (cambiosPendientes) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
         });
 
         function mostrarBackupStatus(mensaje, esError) {
@@ -889,7 +962,8 @@
                 db = datos;
                 aplicarValoresPorDefecto();
 
-                guardarDB();
+                publicarCambios();
+                renderizarTodoAdmin();
                 mostrarBackupStatus('✅ Copia de seguridad restaurada. Recargando panel...', false);
                 event.target.value = '';
                 setTimeout(() => location.reload(), 1200);
@@ -929,6 +1003,7 @@
             document.getElementById('admin-res-partido').addEventListener('change', (e) => mostrarCedulaAdmin(e.target.value));
             setupFormularios();
             verificarEstadoFormularios();
+            actualizarIndicadorPublicar();
             // El primer render llega vía dbRef.on('value', ...) cuando cargan los datos de Firebase
         });
 
