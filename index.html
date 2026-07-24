@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Liga Premier de Acapulco - Sitio Oficial</title>
-    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
     <style>
         :root {
             --primary: #d90429; --secondary: #7209b7; --dark: #011f4b; --light: #f3f8fb;
@@ -329,38 +327,14 @@
     </div>
 
     <script>
-        // ==== Firebase: sincronización en tiempo real ====
-        const firebaseConfig = {
-            apiKey: "AIzaSyDG07c_D4qtCJXap9J1ppU8xLk3IdWYOXo",
-            authDomain: "liga-premier-acapulco.firebaseapp.com",
-            databaseURL: "https://liga-premier-acapulco-default-rtdb.firebaseio.com",
-            projectId: "liga-premier-acapulco",
-            storageBucket: "liga-premier-acapulco.firebasestorage.app",
-            messagingSenderId: "426642299369",
-            appId: "1:426642299369:web:b3486f21982fd5f3515378"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const dbRef = firebase.database().ref('liga_premier_db');
-
-        let db = { 
+        let db = JSON.parse(localStorage.getItem('liga_premier_db')) || { 
             equipos: [], jugadores: [], partidos: [], comunicados: [], 
             arbitros: [], campos: [], xiIdealAdmin: {}, registrosCerrados: false, liguillaActiva: false,
             historialFichajes: [], solicitudes: [], votosMvp: {}
         };
 
-        function aplicarValoresPorDefecto() {
-            if(!db.votosMvp) db.votosMvp = {};
-            if(!db.campos) db.campos = [];
-        }
-        aplicarValoresPorDefecto();
-
-        // Escucha cambios en tiempo real (de admin.html y arbitro.html) y refresca la vista
-        dbRef.on('value', (snapshot) => {
-            const datos = snapshot.val();
-            if (datos) db = datos;
-            aplicarValoresPorDefecto();
-            actualizarVistaTodo();
-        });
+        if(!db.votosMvp) db.votosMvp = {};
+        if(!db.campos) db.campos = [];
 
         function convertirImagenABase64(inputElement) {
             return new Promise((resolve) => {
@@ -388,14 +362,11 @@
                     posicion: document.getElementById('sol-posicion').value.trim(),
                     foto: fotoB64
                 });
-                dbRef.set(db).catch(err => {
-                    console.error('Error al guardar en Firebase:', err);
-                    alert('No se pudo enviar la solicitud. Revisa tu conexión a internet.');
-                });
+                localStorage.setItem('liga_premier_db', JSON.stringify(db));
                 this.reset(); alert("¡Solicitud enviada! El administrador revisará tu registro.");
             });
 
-            // El primer render llega vía dbRef.on('value', ...) cuando cargan los datos de Firebase
+            actualizarVistaTodo();
         });
 
         function toggleTheme() {

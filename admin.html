@@ -8,8 +8,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
     <style>
         :root {
             --primary: #d90429;
@@ -406,28 +404,13 @@
         </div>
     </header>
 
-    <!-- PUBLICACIÓN MANUAL DE CAMBIOS -->
-    <div id="box-publicar" class="admin-box" style="border-top-color: var(--primary); background: #fff8f0; margin-bottom: 25px; position: relative; z-index: 1;">
-        <h3>📤 Publicar en la Web</h3>
-        <p style="font-size:0.85rem; color:#555; margin-top:-6px;">
-            Tus cambios se quedan aquí, en esta pantalla, hasta que presiones "Publicar cambios".
-            Mientras no publiques, el sitio público y el árbitro no verán tus ediciones.
-        </p>
-        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-top:10px;">
-            <button type="button" id="btn-publicar-cambios" onclick="publicarCambios()"
-                style="background:var(--primary); font-weight:700; padding:12px 22px; font-size:1rem;">
-                📤 Publicar cambios
-            </button>
-            <span id="estado-publicacion" style="font-size:0.9rem; font-weight:600;"></span>
-        </div>
-    </div>
-
     <!-- RESPALDO Y RESTAURACIÓN DE DATOS -->
     <div class="admin-box" style="border-top-color: #455a64; background: #f7f9fa; margin-bottom: 25px; position: relative; z-index: 1;">
         <h3>💾 Respaldo de Datos</h3>
         <p style="font-size:0.85rem; color:#555; margin-top:-6px;">
-            Descarga una copia de seguridad periódicamente y guárdala en un lugar seguro. Restaurar un
-            respaldo aquí lo publica de inmediato en la web, reemplazando los datos actuales.
+            Todos los datos de la liga viven únicamente en este navegador. Descarga una copia de seguridad
+            periódicamente y guárdala en un lugar seguro — si se borra el historial o la caché del navegador,
+            se pierde todo si no tienes un respaldo.
         </p>
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
             <button type="button" onclick="exportarBackupDB()" style="background:#455a64;">⬇️ Descargar copia de seguridad (.json)</button>
@@ -789,116 +772,26 @@
     </div>
 
     <script>
-        // ==== Firebase: sincronización en tiempo real ====
-        const firebaseConfig = {
-            apiKey: "AIzaSyDG07c_D4qtCJXap9J1ppU8xLk3IdWYOXo",
-            authDomain: "liga-premier-acapulco.firebaseapp.com",
-            databaseURL: "https://liga-premier-acapulco-default-rtdb.firebaseio.com",
-            projectId: "liga-premier-acapulco",
-            storageBucket: "liga-premier-acapulco.firebasestorage.app",
-            messagingSenderId: "426642299369",
-            appId: "1:426642299369:web:b3486f21982fd5f3515378"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const dbRef = firebase.database().ref('liga_premier_db');
-
-        let db = {
+        let db = JSON.parse(localStorage.getItem('liga_premier_db')) || {
             equipos: [], jugadores: [], partidos: [], comunicados: [],
             arbitros: [], campos: [], xiIdealAdmin: {}, registrosCerrados: false, liguillaActiva: false,
             historialFichajes: [], solicitudes: [], finanzas: {}, votosMvp: {}
         };
 
-        function aplicarValoresPorDefecto() {
-            if (!db.historialFichajes) db.historialFichajes = [];
-            if (!db.arbitros) db.arbitros = [];
-            if (!db.campos) db.campos = [];
-            if (!db.solicitudes) db.solicitudes = [];
-            if (!db.finanzas) db.finanzas = {};
-            if (!db.votosMvp) db.votosMvp = {};
-        }
-        aplicarValoresPorDefecto();
+        if (!db.historialFichajes) db.historialFichajes = [];
+        if (!db.arbitros) db.arbitros = [];
+        if (!db.campos) db.campos = [];
+        if (!db.solicitudes) db.solicitudes = [];
+        if (!db.finanzas) db.finanzas = {};
+        if (!db.votosMvp) db.votosMvp = {};
 
-        function renderizarTodoAdmin() {
+        function guardarDB() {
+            localStorage.setItem('liga_premier_db', JSON.stringify(db));
             actualizarFormularios();
             renderizarSolicitudes();
             renderizarFinanzas();
             renderizarGestion();
         }
-
-        // ==== Publicación manual ====
-        // Mientras haya cambios sin publicar, no se sobrescribe 'db' con lo que
-        // llegue de Firebase (para no perder ediciones locales del administrador).
-        let cambiosPendientes = false;
-        let publicando = false;
-
-        function actualizarIndicadorPublicar(hayCambiosRemotos) {
-            const el = document.getElementById('estado-publicacion');
-            const btn = document.getElementById('btn-publicar-cambios');
-            if (!el || !btn) return;
-            if (publicando) {
-                el.textContent = '⏳ Publicando...';
-                el.style.color = '#8a6d00';
-                btn.disabled = true;
-            } else if (cambiosPendientes) {
-                el.textContent = '🟠 Tienes cambios sin publicar';
-                el.style.color = '#c66900';
-                btn.disabled = false;
-            } else {
-                el.textContent = '✅ Todo publicado';
-                el.style.color = '#2e7d32';
-                btn.disabled = false;
-            }
-            if (hayCambiosRemotos) {
-                el.textContent += ' — hay novedades del árbitro/sitio esperando (se cargarán al publicar o recargar)';
-            }
-        }
-
-        function guardarDB() {
-            aplicarValoresPorDefecto();
-            cambiosPendientes = true;
-            actualizarIndicadorPublicar();
-            renderizarTodoAdmin();
-        }
-
-        function publicarCambios() {
-            aplicarValoresPorDefecto();
-            publicando = true;
-            actualizarIndicadorPublicar();
-            dbRef.set(db)
-                .then(() => {
-                    cambiosPendientes = false;
-                })
-                .catch(err => {
-                    console.error('Error al publicar en Firebase:', err);
-                    alert('❌ No se pudo publicar. Revisa tu conexión a internet e intenta de nuevo.');
-                })
-                .finally(() => {
-                    publicando = false;
-                    actualizarIndicadorPublicar();
-                });
-        }
-
-        // Escucha cambios en tiempo real (de arbitro.html / index.html).
-        // Si el administrador tiene cambios locales sin publicar, NO se sobrescriben.
-        dbRef.on('value', (snapshot) => {
-            const datos = snapshot.val();
-            if (!datos) return;
-            if (cambiosPendientes || publicando) {
-                actualizarIndicadorPublicar(true);
-                return;
-            }
-            db = datos;
-            aplicarValoresPorDefecto();
-            renderizarTodoAdmin();
-            actualizarIndicadorPublicar();
-        });
-
-        window.addEventListener('beforeunload', (e) => {
-            if (cambiosPendientes) {
-                e.preventDefault();
-                e.returnValue = '';
-            }
-        });
 
         function mostrarBackupStatus(mensaje, esError) {
             const el = document.getElementById('backup-status-msg');
@@ -960,10 +853,14 @@
                 }
 
                 db = datos;
-                aplicarValoresPorDefecto();
+                if (!db.historialFichajes) db.historialFichajes = [];
+                if (!db.arbitros) db.arbitros = [];
+                if (!db.campos) db.campos = [];
+                if (!db.solicitudes) db.solicitudes = [];
+                if (!db.finanzas) db.finanzas = {};
+                if (!db.votosMvp) db.votosMvp = {};
 
-                publicarCambios();
-                renderizarTodoAdmin();
+                guardarDB();
                 mostrarBackupStatus('✅ Copia de seguridad restaurada. Recargando panel...', false);
                 event.target.value = '';
                 setTimeout(() => location.reload(), 1200);
@@ -1003,8 +900,10 @@
             document.getElementById('admin-res-partido').addEventListener('change', (e) => mostrarCedulaAdmin(e.target.value));
             setupFormularios();
             verificarEstadoFormularios();
-            actualizarIndicadorPublicar();
-            // El primer render llega vía dbRef.on('value', ...) cuando cargan los datos de Firebase
+            actualizarFormularios();
+            renderizarSolicitudes();
+            renderizarFinanzas();
+            renderizarGestion();
         });
 
         function alternarRegistros(valor) {

@@ -8,8 +8,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
     <style>
         :root {
             --primary: #d90429;
@@ -526,65 +524,20 @@
     </div>
 
     <script>
-        // ==== Firebase: sincronización en tiempo real ====
-        const firebaseConfig = {
-            apiKey: "AIzaSyDG07c_D4qtCJXap9J1ppU8xLk3IdWYOXo",
-            authDomain: "liga-premier-acapulco.firebaseapp.com",
-            databaseURL: "https://liga-premier-acapulco-default-rtdb.firebaseio.com",
-            projectId: "liga-premier-acapulco",
-            storageBucket: "liga-premier-acapulco.firebasestorage.app",
-            messagingSenderId: "426642299369",
-            appId: "1:426642299369:web:b3486f21982fd5f3515378"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const dbRef = firebase.database().ref('liga_premier_db');
-
-        let db = {
+        let db = JSON.parse(localStorage.getItem('liga_premier_db')) || {
             equipos: [], jugadores: [], partidos: [], comunicados: [],
             arbitros: [], xiIdealAdmin: {}, registrosCerrados: false, liguillaActiva: false,
             historialFichajes: [], solicitudes: [], finanzas: {}, votosMvp: {}
         };
-
-        function aplicarValoresPorDefecto() {
-            if (!db.arbitros) db.arbitros = [];
-            if (!db.partidos) db.partidos = [];
-            if (!db.finanzas) db.finanzas = {};
-        }
-        aplicarValoresPorDefecto();
+        if (!db.arbitros) db.arbitros = [];
+        if (!db.partidos) db.partidos = [];
+        if (!db.finanzas) db.finanzas = {};
 
         let arbitroActual = '';
 
         function guardarDB() {
-            aplicarValoresPorDefecto();
-            dbRef.set(db).catch(err => {
-                console.error('Error al guardar en Firebase:', err);
-                alert('No se pudo sincronizar con la nube. Revisa tu conexión a internet.');
-            });
+            localStorage.setItem('liga_premier_db', JSON.stringify(db));
         }
-
-        function poblarSelectorArbitros() {
-            const selectorArb = document.getElementById('arbitro-selector');
-            if (!selectorArb) return;
-            const seleccionPrevia = selectorArb.value;
-            if (db.arbitros.length === 0) {
-                document.getElementById('sin-arbitros-aviso').classList.remove('hidden');
-            } else {
-                document.getElementById('sin-arbitros-aviso').classList.add('hidden');
-                selectorArb.innerHTML = '<option value="">-- Selecciona tu nombre --</option>' +
-                    db.arbitros.map(a => `<option value="${a.nombre}">${a.nombre} (${a.colegio})</option>`).join('');
-                if (seleccionPrevia) selectorArb.value = seleccionPrevia;
-            }
-        }
-
-        // Escucha cambios en tiempo real. No se re-renderiza toda la vista para no
-        // interrumpir al árbitro mientras captura una cédula; solo se refresca la
-        // lista de árbitros disponibles y se mantiene 'db' siempre actualizada.
-        dbRef.on('value', (snapshot) => {
-            const datos = snapshot.val();
-            if (datos) db = datos;
-            aplicarValoresPorDefecto();
-            poblarSelectorArbitros();
-        });
 
         function asegurarFinanzas(eqId) {
             if (!db.finanzas[eqId]) db.finanzas[eqId] = { inscripcionPagada: false, adeudoArbitrajes: 0, multasTarjetas: 0 };
@@ -615,7 +568,13 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             const selectorArb = document.getElementById('arbitro-selector');
-            poblarSelectorArbitros();
+
+            if (db.arbitros.length === 0) {
+                document.getElementById('sin-arbitros-aviso').classList.remove('hidden');
+            } else {
+                selectorArb.innerHTML = '<option value="">-- Selecciona tu nombre --</option>' +
+                    db.arbitros.map(a => `<option value="${a.nombre}">${a.nombre} (${a.colegio})</option>`).join('');
+            }
 
             selectorArb.addEventListener('change', (e) => {
                 cargarPartidosDelArbitro(e.target.value);
