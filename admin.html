@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.1/firebase-database-compat.js"></script>
     <style>
         :root {
             --primary: #d90429;
@@ -771,22 +773,27 @@
         </div>
     </div>
 
-    <!-- Firebase: base de datos en la nube, compartida y en tiempo real -->
-    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
-    <script src="firebase-config.js"></script>
-
     <script>
+        // ==== Firebase: sincronización en tiempo real ====
+        const firebaseConfig = {
+            apiKey: "AIzaSyDG07c_D4qtCJXap9J1ppU8xLk3IdWYOXo",
+            authDomain: "liga-premier-acapulco.firebaseapp.com",
+            databaseURL: "https://liga-premier-acapulco-default-rtdb.firebaseio.com",
+            projectId: "liga-premier-acapulco",
+            storageBucket: "liga-premier-acapulco.firebasestorage.app",
+            messagingSenderId: "426642299369",
+            appId: "1:426642299369:web:b3486f21982fd5f3515378"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const dbRef = firebase.database().ref('liga_premier_db');
+
         let db = {
             equipos: [], jugadores: [], partidos: [], comunicados: [],
             arbitros: [], campos: [], xiIdealAdmin: {}, registrosCerrados: false, liguillaActiva: false,
             historialFichajes: [], solicitudes: [], finanzas: {}, votosMvp: {}
         };
 
-        // Referencia a la base de datos en la nube (Firebase Realtime Database)
-        const dbRef = firebase.database().ref('liga_premier_db');
-
-        function asegurarCamposDB() {
+        function aplicarValoresPorDefecto() {
             if (!db.historialFichajes) db.historialFichajes = [];
             if (!db.arbitros) db.arbitros = [];
             if (!db.campos) db.campos = [];
@@ -794,35 +801,31 @@
             if (!db.finanzas) db.finanzas = {};
             if (!db.votosMvp) db.votosMvp = {};
         }
+        aplicarValoresPorDefecto();
 
-        function refrescarPanelAdmin() {
-            verificarEstadoFormularios();
+        function renderizarTodoAdmin() {
             actualizarFormularios();
             renderizarSolicitudes();
             renderizarFinanzas();
             renderizarGestion();
         }
 
-        // Escucha CUALQUIER cambio en la base de datos (hecho desde este panel, desde
-        // arbitro.html o desde otra computadora) y refresca el panel automáticamente.
+        function guardarDB() {
+            aplicarValoresPorDefecto();
+            dbRef.set(db).catch(err => {
+                console.error('Error al guardar en Firebase:', err);
+                alert('No se pudo sincronizar con la nube. Revisa tu conexión a internet.');
+            });
+            renderizarTodoAdmin();
+        }
+
+        // Escucha cambios en tiempo real (propios y de arbitro.html / index.html)
         dbRef.on('value', (snapshot) => {
             const datos = snapshot.val();
             if (datos) db = datos;
-            asegurarCamposDB();
-            localStorage.setItem('liga_premier_db', JSON.stringify(db)); // caché local de respaldo
-            refrescarPanelAdmin();
-        }, (error) => {
-            console.error('Error de conexión con la base de datos en la nube:', error);
-            mostrarBackupStatus('❌ Sin conexión con la base de datos en la nube.', true);
+            aplicarValoresPorDefecto();
+            renderizarTodoAdmin();
         });
-
-        function guardarDB() {
-            dbRef.set(db).catch(err => {
-                console.error('Error guardando en la nube:', err);
-                alert('⚠️ No se pudo guardar en la nube. Revisa tu conexión a internet.');
-            });
-            localStorage.setItem('liga_premier_db', JSON.stringify(db));
-        }
 
         function mostrarBackupStatus(mensaje, esError) {
             const el = document.getElementById('backup-status-msg');
@@ -884,7 +887,8 @@
                 }
 
                 db = datos;
-                asegurarCamposDB();
+                aplicarValoresPorDefecto();
+
                 guardarDB();
                 mostrarBackupStatus('✅ Copia de seguridad restaurada. Recargando panel...', false);
                 event.target.value = '';
@@ -924,6 +928,8 @@
         document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('admin-res-partido').addEventListener('change', (e) => mostrarCedulaAdmin(e.target.value));
             setupFormularios();
+            verificarEstadoFormularios();
+            // El primer render llega vía dbRef.on('value', ...) cuando cargan los datos de Firebase
         });
 
         function alternarRegistros(valor) {
