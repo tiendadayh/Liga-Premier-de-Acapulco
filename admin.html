@@ -771,26 +771,57 @@
         </div>
     </div>
 
+    <!-- Firebase: base de datos en la nube, compartida y en tiempo real -->
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+
     <script>
-        let db = JSON.parse(localStorage.getItem('liga_premier_db')) || {
+        let db = {
             equipos: [], jugadores: [], partidos: [], comunicados: [],
             arbitros: [], campos: [], xiIdealAdmin: {}, registrosCerrados: false, liguillaActiva: false,
             historialFichajes: [], solicitudes: [], finanzas: {}, votosMvp: {}
         };
 
-        if (!db.historialFichajes) db.historialFichajes = [];
-        if (!db.arbitros) db.arbitros = [];
-        if (!db.campos) db.campos = [];
-        if (!db.solicitudes) db.solicitudes = [];
-        if (!db.finanzas) db.finanzas = {};
-        if (!db.votosMvp) db.votosMvp = {};
+        // Referencia a la base de datos en la nube (Firebase Realtime Database)
+        const dbRef = firebase.database().ref('liga_premier_db');
 
-        function guardarDB() {
-            localStorage.setItem('liga_premier_db', JSON.stringify(db));
+        function asegurarCamposDB() {
+            if (!db.historialFichajes) db.historialFichajes = [];
+            if (!db.arbitros) db.arbitros = [];
+            if (!db.campos) db.campos = [];
+            if (!db.solicitudes) db.solicitudes = [];
+            if (!db.finanzas) db.finanzas = {};
+            if (!db.votosMvp) db.votosMvp = {};
+        }
+
+        function refrescarPanelAdmin() {
+            verificarEstadoFormularios();
             actualizarFormularios();
             renderizarSolicitudes();
             renderizarFinanzas();
             renderizarGestion();
+        }
+
+        // Escucha CUALQUIER cambio en la base de datos (hecho desde este panel, desde
+        // arbitro.html o desde otra computadora) y refresca el panel automáticamente.
+        dbRef.on('value', (snapshot) => {
+            const datos = snapshot.val();
+            if (datos) db = datos;
+            asegurarCamposDB();
+            localStorage.setItem('liga_premier_db', JSON.stringify(db)); // caché local de respaldo
+            refrescarPanelAdmin();
+        }, (error) => {
+            console.error('Error de conexión con la base de datos en la nube:', error);
+            mostrarBackupStatus('❌ Sin conexión con la base de datos en la nube.', true);
+        });
+
+        function guardarDB() {
+            dbRef.set(db).catch(err => {
+                console.error('Error guardando en la nube:', err);
+                alert('⚠️ No se pudo guardar en la nube. Revisa tu conexión a internet.');
+            });
+            localStorage.setItem('liga_premier_db', JSON.stringify(db));
         }
 
         function mostrarBackupStatus(mensaje, esError) {
@@ -853,13 +884,7 @@
                 }
 
                 db = datos;
-                if (!db.historialFichajes) db.historialFichajes = [];
-                if (!db.arbitros) db.arbitros = [];
-                if (!db.campos) db.campos = [];
-                if (!db.solicitudes) db.solicitudes = [];
-                if (!db.finanzas) db.finanzas = {};
-                if (!db.votosMvp) db.votosMvp = {};
-
+                asegurarCamposDB();
                 guardarDB();
                 mostrarBackupStatus('✅ Copia de seguridad restaurada. Recargando panel...', false);
                 event.target.value = '';
@@ -899,11 +924,6 @@
         document.addEventListener("DOMContentLoaded", () => {
             document.getElementById('admin-res-partido').addEventListener('change', (e) => mostrarCedulaAdmin(e.target.value));
             setupFormularios();
-            verificarEstadoFormularios();
-            actualizarFormularios();
-            renderizarSolicitudes();
-            renderizarFinanzas();
-            renderizarGestion();
         });
 
         function alternarRegistros(valor) {

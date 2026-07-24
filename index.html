@@ -326,15 +326,45 @@
         </div>
     </div>
 
+    <!-- Firebase: base de datos en la nube, compartida y en tiempo real -->
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+
     <script>
-        let db = JSON.parse(localStorage.getItem('liga_premier_db')) || { 
+        let db = {
             equipos: [], jugadores: [], partidos: [], comunicados: [], 
             arbitros: [], campos: [], xiIdealAdmin: {}, registrosCerrados: false, liguillaActiva: false,
             historialFichajes: [], solicitudes: [], votosMvp: {}
         };
 
-        if(!db.votosMvp) db.votosMvp = {};
-        if(!db.campos) db.campos = [];
+        // Referencia a la base de datos en la nube (Firebase Realtime Database)
+        const dbRef = firebase.database().ref('liga_premier_db');
+
+        function asegurarCamposDB() {
+            if(!db.votosMvp) db.votosMvp = {};
+            if(!db.campos) db.campos = [];
+        }
+
+        // Escucha CUALQUIER cambio en la base de datos (hecho por admin.html, arbitro.html
+        // u otro visitante) y refresca la página automáticamente, sin recargar.
+        dbRef.on('value', (snapshot) => {
+            const datos = snapshot.val();
+            if (datos) db = datos;
+            asegurarCamposDB();
+            localStorage.setItem('liga_premier_db', JSON.stringify(db)); // caché local de respaldo
+            actualizarVistaTodo();
+        }, (error) => {
+            console.error('Error de conexión con la base de datos en la nube:', error);
+        });
+
+        function guardarDB() {
+            dbRef.set(db).catch(err => {
+                console.error('Error guardando en la nube:', err);
+                alert('⚠️ No se pudo guardar en la nube. Revisa tu conexión a internet.');
+            });
+            localStorage.setItem('liga_premier_db', JSON.stringify(db));
+        }
 
         function convertirImagenABase64(inputElement) {
             return new Promise((resolve) => {
@@ -362,11 +392,9 @@
                     posicion: document.getElementById('sol-posicion').value.trim(),
                     foto: fotoB64
                 });
-                localStorage.setItem('liga_premier_db', JSON.stringify(db));
+                guardarDB();
                 this.reset(); alert("¡Solicitud enviada! El administrador revisará tu registro.");
             });
-
-            actualizarVistaTodo();
         });
 
         function toggleTheme() {

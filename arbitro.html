@@ -523,19 +523,59 @@
         </div>
     </div>
 
+    <!-- Firebase: base de datos en la nube, compartida y en tiempo real -->
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
+
     <script>
-        let db = JSON.parse(localStorage.getItem('liga_premier_db')) || {
+        let db = {
             equipos: [], jugadores: [], partidos: [], comunicados: [],
             arbitros: [], xiIdealAdmin: {}, registrosCerrados: false, liguillaActiva: false,
             historialFichajes: [], solicitudes: [], finanzas: {}, votosMvp: {}
         };
-        if (!db.arbitros) db.arbitros = [];
-        if (!db.partidos) db.partidos = [];
-        if (!db.finanzas) db.finanzas = {};
 
+        // Referencia a la base de datos en la nube (Firebase Realtime Database)
+        const dbRef = firebase.database().ref('liga_premier_db');
         let arbitroActual = '';
 
+        function asegurarCamposDB() {
+            if (!db.arbitros) db.arbitros = [];
+            if (!db.partidos) db.partidos = [];
+            if (!db.finanzas) db.finanzas = {};
+        }
+
+        function refrescarSelectorArbitros() {
+            const selectorArb = document.getElementById('arbitro-selector');
+            if (db.arbitros.length === 0) {
+                document.getElementById('sin-arbitros-aviso').classList.remove('hidden');
+            } else {
+                document.getElementById('sin-arbitros-aviso').classList.add('hidden');
+                const seleccionActual = selectorArb.value;
+                selectorArb.innerHTML = '<option value="">-- Selecciona tu nombre --</option>' +
+                    db.arbitros.map(a => `<option value="${a.nombre}">${a.nombre} (${a.colegio})</option>`).join('');
+                selectorArb.value = seleccionActual;
+            }
+        }
+
+        // Escucha CUALQUIER cambio en la base de datos (hecho desde admin.html, desde este
+        // mismo panel u otro árbitro) y refresca la vista automáticamente.
+        dbRef.on('value', (snapshot) => {
+            const datos = snapshot.val();
+            if (datos) db = datos;
+            asegurarCamposDB();
+            localStorage.setItem('liga_premier_db', JSON.stringify(db)); // caché local de respaldo
+            refrescarSelectorArbitros();
+            if (arbitroActual) cargarPartidosDelArbitro(arbitroActual);
+        }, (error) => {
+            console.error('Error de conexión con la base de datos en la nube:', error);
+        });
+
         function guardarDB() {
+            dbRef.set(db).catch(err => {
+                console.error('Error guardando en la nube:', err);
+                alert('⚠️ No se pudo guardar en la nube. Revisa tu conexión a internet.');
+            });
             localStorage.setItem('liga_premier_db', JSON.stringify(db));
         }
 
@@ -567,16 +607,7 @@
         }
 
         document.addEventListener("DOMContentLoaded", () => {
-            const selectorArb = document.getElementById('arbitro-selector');
-
-            if (db.arbitros.length === 0) {
-                document.getElementById('sin-arbitros-aviso').classList.remove('hidden');
-            } else {
-                selectorArb.innerHTML = '<option value="">-- Selecciona tu nombre --</option>' +
-                    db.arbitros.map(a => `<option value="${a.nombre}">${a.nombre} (${a.colegio})</option>`).join('');
-            }
-
-            selectorArb.addEventListener('change', (e) => {
+            document.getElementById('arbitro-selector').addEventListener('change', (e) => {
                 cargarPartidosDelArbitro(e.target.value);
                 mostrarPerfilArbitro(e.target.value);
             });
