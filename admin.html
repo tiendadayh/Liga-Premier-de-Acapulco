@@ -389,6 +389,9 @@
 
         .hidden { display: none !important; }
     </style>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+    <script src="firebase-config.js"></script>
 </head>
 
 <body>
@@ -404,13 +407,25 @@
         </div>
     </header>
 
+    <!-- PUBLICACIÓN EN LA NUBE -->
+    <div class="admin-box" style="border-top-color: #2ec4b6; background: #f2fbfa; margin-bottom: 25px; position: relative; z-index: 1;">
+        <h3>☁️ Publicación en la Nube</h3>
+        <p style="font-size:0.85rem; color:#555; margin-top:-6px;">
+            Tus cambios se quedan solo en esta pantalla hasta que presiones "Publicar Cambios". Al publicar,
+            el sitio público y el panel del árbitro verán la información al instante, desde cualquier dispositivo.
+        </p>
+        <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:10px;">
+            <button type="button" onclick="publicarCambios()" style="background:#2ec4b6; font-weight:bold;">📤 Publicar Cambios</button>
+            <span id="estado-publicacion" style="font-size:0.85rem; font-weight:bold;">Cargando...</span>
+        </div>
+    </div>
+
     <!-- RESPALDO Y RESTAURACIÓN DE DATOS -->
     <div class="admin-box" style="border-top-color: #455a64; background: #f7f9fa; margin-bottom: 25px; position: relative; z-index: 1;">
         <h3>💾 Respaldo de Datos</h3>
         <p style="font-size:0.85rem; color:#555; margin-top:-6px;">
-            Todos los datos de la liga viven únicamente en este navegador. Descarga una copia de seguridad
-            periódicamente y guárdala en un lugar seguro — si se borra el historial o la caché del navegador,
-            se pierde todo si no tienes un respaldo.
+            La copia de seguridad es un respaldo adicional (por si acaso) de los datos ya publicados en la nube.
+            Descárgala periódicamente y guárdala en un lugar seguro.
         </p>
         <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
             <button type="button" onclick="exportarBackupDB()" style="background:#455a64;">⬇️ Descargar copia de seguridad (.json)</button>
